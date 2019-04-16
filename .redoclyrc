@@ -1,0 +1,8 @@
+
+apiTitle: CogniAPI
+splitSpec: false
+codeSamples: true
+swaggerUI: true
+travis: true
+repo: devis12/CogniAPI_spec
+oasVersion: '2.0'
