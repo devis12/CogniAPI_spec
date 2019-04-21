@@ -244,3 +244,522 @@ definitions:
         example: Smith
       email:
         $ref: '#/definitions/Email'
+  
+  Point2d:
+    type: object
+    properties:
+      x:
+        description: X coordinate in px
+        type: integer
+      y:
+        description: Y coordinate in px
+        type: integer
+  
+  Point3d:
+    type: object
+    properties:
+      x:
+        description: X coordinate in px
+        type: integer
+      y:
+        description: Y coordinate in px
+        type: integer
+      z:
+        description: Z coordinate in px (depth in an image)
+        type: integer
+  
+  BoundingBox:
+    type: object
+    properties:
+      width:
+        description: Width dimension in px of the rectangle box
+        type: integer
+      height:
+        description: Height dimension in px of the rectangle box
+        type: integer
+      bl:
+        $ref: '#/definitions/Point2d'
+      br:
+        $ref: '#/definitions/Point2d'
+      tl:
+        $ref: '#/definitions/Point2d'
+      tr:
+        $ref: '#/definitions/Point2d'
+  
+  Exposure:
+    type: object
+    properties:
+      exposureLevel:
+        description: Face exposure level
+        type: string
+        enum: ['GoodExposure', 'OverExposure', 'UnderExposure']
+      value:
+        description: Level of exposure expressed as a value between 0 and 1
+        type: number
+        minimum: 0
+        maximum: 1
+      underExposedLikelihood:
+        description: Google Cloud Likelihood value in order to express the level of exposure
+        type: string
+        enum: [ 'UNKNOWN', 'VERY_UNLIKELY', 'UNLIKELY, POSSIBLE', 'LIKELY', 'VERY_LIKELY' ]
+  
+  Blur:
+    type: object
+    properties:
+      blurLevel:
+        description: Blur level
+        type: string
+        enum: ['Low', 'Medium', 'High']
+      value:
+        description: Level of blur expressed as a value between 0 and 1
+        type: number
+        minimum: 0
+        maximum: 1
+      blurredLikelihood:
+        description: Google Cloud Likelihood value in order to express the level of blurriness
+        type: string
+        enum: [ 'UNKNOWN', 'VERY_UNLIKELY', 'UNLIKELY, POSSIBLE', 'LIKELY', 'VERY_LIKELY' ]
+        
+  Noise:
+    type: object
+    properties:
+      noiseLevel:
+        description: Noise level of face pixels
+        type: string
+        enum: ['Low', 'Medium', 'High']
+      value:
+        description: Level of noise of face pixels expressed as a value between 0 and 1
+        type: number
+        minimum: 0
+        maximum: 1
+        
+  Occlusion:
+    type: object
+    properties:
+      eyeMakeup:
+        description: True if the eye(s) is(are) detected with makeup on it(them)
+        type: boolean
+      lipMakeup:
+        description: True if the lip(s) has(have) makeup on it(them)
+        type: boolean
+  
+  Makeup:
+    type: object
+    properties:
+      foreheadOccluded:
+        description: True if the forehead is occluded
+        type: boolean
+      eyeOccluded:
+        description: True if the eye(s) is(are) occluded
+        type: boolean
+      mouthOccluded:
+        description: True if the mouth is occluded
+        type: boolean
+        
+  Accessory:
+    type: object
+    properties:
+      type:
+        description: Denomination of the type of identified accessory
+        type: string
+        example: headwear
+      confidence:
+        description: Probability value between 0 and 1 in order to express the confidence of the presence of the identified object 
+        type: number
+        minimum: 0
+        maximum: 1
+  
+  Emotion:
+    type: object
+    properties:
+      confidence:
+        description: Probability value between 0 and 1 in order to express the confidence of the presence of the identified object 
+        type: number
+        minimum: 0
+        maximum: 1
+      confidenceLabel:
+        description: Google Cloud Likelihood value in order to express the level of blurriness
+        type: string
+        enum: [ 'UNKNOWN', 'VERY_UNLIKELY', 'UNLIKELY, POSSIBLE', 'LIKELY', 'VERY_LIKELY' ]
+        
+  HeadPose:
+    type: object
+    properties:
+      rollAngle:
+        description: Roll angle, which indicates the amount of clockwise/anti-clockwise rotation of the face relative to the image vertical about the axis perpendicular to the face. Range [-180,180]
+        type: number
+        minimum: -180
+        maximum: 180
+      panAngle:
+        description: Yaw angle, which indicates the leftward/rightward angle that the face is pointing relative to the vertical plane perpendicular to the image. Range [-180,180].
+        type: number
+        minimum: -180
+        maximum: 180
+      tiltAngle:
+        description: Pitch angle, which indicates the upwards/downwards angle that the face is pointing relative to the image's horizontal plane. Range [-180,180].
+        type: number
+        minimum: -180
+        maximum: 180
+  
+  Hair:
+    type: object
+    properties:
+      invisible:
+        description: Indicate if the hair are visible or not
+        type: boolean
+      bald:
+        description: Indicate level of baldness as a value between 0 and 1
+        type: number
+        minimum: 0
+        maximum: 1
+      hairColors:
+        description: Possible colors of the detected hair for the face
+        type: array
+        items:
+          $ref: '#/definitions/HairColor'
+  
+  HairColor:
+    type: object
+    properties:
+      color:
+        description: Possible color for the hair
+        type: string
+        example: Brown
+      confidence:
+        description: Confidence value for this hair color expressed as a value between 0 and 1
+        type: number
+        minimum: 0
+        maximum: 1
+        
+  FacialHair:
+    type: object
+    properties:
+      moustache:
+        description: Indicate if it's been detected a moustache in the face
+        type: boolean
+      beard:
+        description: Indicate if it's been detected a beard in the face
+        type: boolean
+      sideburns:
+        description: Indicate if it's been detected a sideburns in the face
+        type: boolean
+  
+  PersistedFace:
+    type: object
+    properties:
+      persistedFaceId:
+        description: Persisted Face Id on Azure in the Face List Group related to the logged user
+        type: string
+      persistedUserData:
+        description: User Data linked to the persisted Face Id on Azure in the Face List Group related to the logged user (and provided by him/her in the first place)
+        type: string
+      confidence:
+        description: Level of similarity of this persisted face in respect to the one which has been just detected
+        type: number
+        minimum: 0
+        maximum: 1
+  
+  TagNoBound:
+    type: object
+    properties:
+      name:
+        description: Concept, object, logo, celebrity name
+        type: string
+      confidence:
+        description: Level of confidence for the detected concept, logo, object, celebrity
+        type: number
+        minimum: 0
+        maximum: 1
+  
+  Tag:
+    type: object
+    properties:
+      name:
+        description: Concept, object, logo, celebrity name
+        type: string
+      confidence:
+        description: Level of confidence for the detected concept, logo, object, celebrity
+        type: number
+        minimum: 0
+        maximum: 1
+      boundingBox:
+        $ref: '#/definitions/BoundingBox'
+  
+  Text:
+    type: object
+    properties:
+      content:
+        description: Content for the detected text
+        type: string
+      confidence:
+        description: Level of confidence in relation to the presence of the detected text
+        type: number
+        minimum: 0
+        maximum: 1
+      boundingBox:
+        $ref: '#/definitions/BoundingBox'
+  
+  Landmark:
+    type: object
+    properties:
+      name:
+        description: Name of the detected landmark
+        type: string
+      confidence:
+        description: Level of confidence in relation to the presence of the detected landmark
+        type: number
+        minimum: 0
+        maximum: 1
+      latitude:
+        description: Latitude coordinate for the detected landmark 
+        type: number
+        minimum: -90
+        maximum: 90
+      longitude:
+        description: Longitude coordinate for the detected landmark 
+        type: number
+        minimum: -180
+        maximum: 180
+      boundingBox:
+        $ref: '#/definitions/BoundingBox'
+  
+  Description:
+    type: object
+    properties:
+      generic_tags:
+        description: Array of generic tags related to the uploaded image (grouped in lists by common concepts)
+        type: array
+        items:
+          type: array
+          items:
+            type: string
+      captions:
+        description: Brief sentences which aims to synthesize the content of the image
+        type: array
+        items:
+          $ref: '#/definitions/TagNoBound'
+      categories:
+        description: Most of the time just a single word which aims to synthesize the content of the image. All the values are limited to an 86 taxonomy defined by Azure Computer Vision at https://docs.microsoft.com/en-us/azure/cognitive-services/Computer-vision/category-taxonomy
+        type: array
+        items:
+          $ref: '#/definitions/TagNoBound'
+  
+  RGBA:
+    type: object
+    properties:
+      r:
+        description: Red value for rgba
+        type: integer
+        minimum: 0
+        maximum: 255
+      g:
+        description: Green value for rgba
+        type: integer
+        minimum: 0
+        maximum: 255
+      b:
+        description: Blue value for rgba
+        type: integer
+        minimum: 0
+        maximum: 255
+      a:
+        description: Alpha value
+        type: number
+        minimum: 0
+        maximum: 1
+        
+  ColorInfoRGBA:
+    type: object
+    properties:
+      pixelFraction:
+        description: The fraction of pixels the color occupies in the image. Value in range [0, 1]
+        type: number
+        minimum: 0
+        maximum: 1
+      confidence:
+        description: Image-specific score for this color. Value in range [0, 1].
+        type: number
+        minimum: 0
+        maximum: 1
+      rgba:
+        description: RGBA value for this color
+        $ref: '#/definitions/RGBA'
+  
+  GraphicalData:
+    type: object
+    properties:
+      dominantColorForeground:
+        description: The dominant color in the foreground
+        type: string
+      dominantColorBackground:
+        description: The dominant color in the background
+        type: string
+      dominantColors:
+        description: The dominant colors for the image
+        type: array
+        items: 
+          type: string
+      accentColor:
+        description: Accent color detected for the current image
+        type: string
+      isBWImg:
+        description: True if the image is in black and white
+        type: boolean
+      clipArtType:
+        description: Integer value between 0 and 3 in order to define how much this image is similar to a clipart
+        type: integer
+        minimum: 0
+        maximum: 3
+      lineDrawingType:
+        description: True if the image content is detected as drawn by a human
+        type: boolean
+      colorInfoRGBA:
+        description: Color Info with rgba values and px fraction
+        $ref: '#/definitions/ColorInfoRGBA'
+      
+  SafetyProperty:
+    type: object
+    properties:
+      present:
+        description: True if the content of the image confirm the presence of this property (property 'racy' and present=True, it means that the content has a highly probability of been racist)
+        type: boolean
+      confidence:
+        description: Confidence value expressed as a value between 0 and 1 for this safety property
+        type: number
+        minimum: 0
+        maximum: 1
+      label:
+        description: Confidence value expressed as a value between 0 and 1 for this safety property
+        type: number
+        minimum: 0
+        maximum: 1  
+      confidenceLabel:
+        description: Confidence value expressed as the likelihood label offered by Google Cloud Vision
+        type: string
+        enum: [ 'UNKNOWN', 'VERY_UNLIKELY', 'UNLIKELY, POSSIBLE', 'LIKELY', 'VERY_LIKELY' ]
+  Metadata:
+    type: object
+    properties:
+      width:
+        description: Pixel width for the analyzed picture
+        type: integer
+      height:
+        description: Pixel height for the analyzed picture
+        type: integer
+      format:
+        description: Format of the analyzed picture
+        type: string
+  
+  Face:
+    type: object
+    properties:
+      faceId:
+        description: faceId randomly generated by Azure Face (will expire in 24 hours)
+        type: string
+      gender:
+        description: Recognized gender 
+        type: string
+        enum: ['male', 'female']
+      age:
+        description: Recognized age value
+        type: integer
+      smile:
+        description: Smile intensity, a number between [0,1]
+        type: number
+        minimum: 0
+        maximum: 1
+      glasses:
+        description: Glasses type
+        type: string
+        enum: ['NoGlasses', 'ReadingGlasses', 'Sunglasses', 'SwimmingGoggles']
+      faceRectangle:
+        $ref: '#/definitions/BoundingBox'
+      similarFaces:
+        type: array
+        items:
+          $ref: '#/definitions/PersistedFace'
+      celebrity:
+        description: Tag present if it is the face of a recognized celebrity
+        $ref: '#/definitions/TagNoBound'
+      facialHair:
+        $ref: '#/definitions/FacialHair'
+      hair:
+        $ref: '#/definitions/Hair'
+      headPose:
+        $ref: '#/definitions/HeadPose'
+      emotions:
+        type: object
+        properties:
+          anger:
+            $ref: '#/definitions/Emotion'
+          contempt:
+            $ref: '#/definitions/Emotion'
+          disgust:
+            $ref: '#/definitions/Emotion'
+          fear:
+            $ref: '#/definitions/Emotion'
+          happiness:
+            $ref: '#/definitions/Emotion'
+          neutral:
+            $ref: '#/definitions/Emotion'
+          sadness:
+            $ref: '#/definitions/Emotion'
+          surprise:
+            $ref: '#/definitions/Emotion'
+      makeup:
+        $ref: '#/definitions/Makeup'
+      occlusion:
+        $ref: '#/definitions/Occlusion'
+      accessories:
+        type: array
+        items:
+          $ref: '#/definitions/Accessory'
+      noise:
+        $ref: '#/definitions/Noise'
+      blur:
+        $ref: '#/definitions/Blur'
+      exposure:
+        $ref: '#/definitions/Exposure'
+      
+  ImageAnnotation:
+    type: object
+    properties:
+      metadata:
+        $ref: '#/definitions/Metadata'
+      texts:
+        type: array
+        items:
+          $ref: '#/definitions/Text'
+      landmarks:
+        type: array
+        items:
+          $ref: '#/definitions/Landmark'
+      objects:
+        type: array
+        items:
+          $ref: '#/definitions/Tag'
+      tags:
+        type: array
+        items:
+          $ref: '#/definitions/Tag'
+      description:
+        $ref: '#/definitions/Description'
+      graphicalData:
+        $ref: '#/definitions/GraphicalData'
+      faces:
+        type: array
+        items:
+          $ref: '#/definitions/Face'
+      safetyAnnotations:
+        type: object
+        properties:
+          racy:
+            $ref: '#/definitions/SafetyProperty'
+          adult:
+            $ref: '#/definitions/SafetyProperty'
+          violence:
+            $ref: '#/definitions/SafetyProperty'
+          medical:
+            $ref: '#/definitions/SafetyProperty'
+          spoof:
+            $ref: '#/definitions/SafetyProperty'
