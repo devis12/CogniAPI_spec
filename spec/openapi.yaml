@@ -1,137 +1,78 @@
-# This is an **example** API to demonstrate features of OpenAPI specification.
-# It doesn't cover all OpenAPI features. For more full example check out: https://github.com/APIs-guru/petstore_extended
-
 swagger: '2.0'
-# You should specify common part of your endpoints in the following format:
-#   <schemes>://<host><basepath>
 schemes:
   - http # Remove if your API doesn't support HTTP
   - https # Remove if your API doesn't support HTTPS
-host: example.com # Replace with your hostname. You can also specify port e.g. example.com:777
-basePath: /api/v1 # Replace with your basePath. Note: SHOULD begin with '/'.
+host: cogni-api.herokuapp.com
+basePath: /
 info:
   # Describe your API here, you can use GFM (https://guides.github.com/features/mastering-markdown) here
   description: |
-    This is an **example** API to demonstrate features of OpenAPI specification
+    CogniAPI aims to provide you a simpler and more straightforward way to analyse and process images content expoiting the power of Azure and Google Cloud cognitive services
     # Introduction
-    This specification is intended to to be a good starting point for describing your API in 
+    This specification is intended to to be a good starting point for describing CogniAPI in 
     [OpenAPI/Swagger format](https://github.com/OAI/OpenAPI-Specification/blob/master/versions/2.0.md).
-    It also demonstrates features of [generator-openapi-repo](https://github.com/Rebilly/generator-openapi-repo) tool and 
-    [ReDoc](https://github.com/Rebilly/ReDoc) documentation engine. So beyond the standard OpenAPI syntax we use a few 
-    [vendor extensions](https://github.com/Rebilly/ReDoc/blob/master/docs/redoc-vendor-extensions.md).
     
-    # OpenAPI Specification
-    The goal of The OpenAPI Specification is to define a standard, language-agnostic interface to REST APIs which
-    allows both humans and computers to discover and understand the capabilities of the service without access to source
-    code, documentation, or through network traffic inspection. When properly defined via OpenAPI, a consumer can 
-    understand and interact with the remote service with a minimal amount of implementation logic. Similar to what
-    interfaces have done for lower-level programming, OpenAPI removes the guesswork in calling the service.
+    # CogniAPI Specification
+    The goal of The CogniAPI Specification is to guide you to the use of a less intricate but very useful REST service for image analysis which could be applied in many cases. Exploiting the power of Azure Computer Vision, Azure Face and Google Cloud Vision, this APIs will try to provide all the results to you in a unified and more straightforward schema. The properties provided to you could be resume in the following list:
+    
+      * Retrieving tags which tries to condensate the image content in a set of words
+      * Detecting objects, locations and people of interest
+      * Detecting faces (with emotions, gender, age and additional attributes related to them)
+      * Evaluating the presence of inappropriate content in the image (racy, adult, violence, ...)
+      * Complete analysis of the colors and other graphical aspects which characterize the image
 
-  version: '1.0.0' # Your API version
-  # It can be any string but it is better to use semantic versioning: http://semver.org/
-  # Warning: OpenAPI require version to be string, but without quotation YAML can recognize it as number.
+  version: '1.0.0'
 
-  title: Example.com # Replace with your API title
-  # Keep it simple. Don't add "API" or version at the end of the string.
+  title: CogniAPI
 
-  termsOfService: 'https://example.com/terms/' # [Optional] Replace with an URL to your ToS
+  termsOfService: 'https://cogni-api.herokuapp.com/terms/' 
   contact:
-    email: contact@example.com # [Optional] Replace with your contact email
-    url: 'http://example.com/contact' # [Optional] Replace with link to your contact form
+    email: devis.dalmoro@studenti.unitn.it 
   license:
-    name: Apache 2.0
-    url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
+    name: MIT
+    url: 'https://github.com/devis12/CogniAPI/blob/master/LICENSE'
   x-logo:
-    url: 'https://apis.guru/openapi-template/logo.png'
+    url: 'https://github.com/devis12/CogniAPI/blob/master/views/img/logo.png'
 externalDocs:
   description: Find out how to create Github repo for your OpenAPI spec.
   url: 'https://github.com/Rebilly/generator-openapi-repo'
 produces:
-  # List of mime types your API endpoints can return.
-  # This is a global default. You can OVERWRITE it in each specific operation.
-  # Remove the ones not used in your API
+  # List of mime types CogniAPI endpoints can return.
   - application/json
-  - application/xml
-  - text/csv
-  # you can add any mime type your API produces to the list
+  - text/plain
 consumes:
-  # List of mime types your API endpoints consumes.
-  # This is a global default. You can OVERWRITE it in each specific operation.
-  # Remove the ones not supported by your API
+  # List of mime types CogniAPI endpoints consumes.
   - application/json
   - application/xml
-  # you can add any mime type your API consumes to the list
 
 # A list of tags used by the specification with additional metadata.
 # The order of the tags can be used to reflect on their order by the parsing tools.
 tags:
-  - name: Echo
-    description: Example echo operations
-  - name: User
-    description: Operations about user
-# Security scheme definitions that can be used across the specification.
-securityDefinitions:
-  main_auth: # security definition name (you can name it as you want)
-    type: oauth2 # authorization type, one of: oauth2, basic, apiKey
-    # the following options are specific to oauth2 type
-    authorizationUrl: 'http://example.com/api/oauth/dialog'
-    flow: implicit
-    scopes:
-      'read:users': read users info
-      'write:users': modify or remove users
-  api_key: # security definition name (you can name it as you want)
-    type: apiKey
-    # The following options are specific to apiKey type
-    in: header # Where API key will be passed: header or query
-    name: api_key # API key parameter name
-  basic_auth: # security definition name (you can name it as you want)
-    type: basic
+  - name: Auth
+    description: Authentication operations
+  - name: Analyse
+    description: Image Analysis operations provided by CogniAPI
+  - name: AsyncAnalyse
+    description: Image Async Analysis operations provided by CogniAPI
+  - name: GCloud
+    description: Image Analysis operations provided just by Google Cloud Vision
+  - name: Azure
+    description: Image Analysis operations provided just by Azure Computer Vision and Azure Face
 
-# Holds the relative paths to the individual endpoints. The path is appended to the
-# basePath in order to construct the full URL. 
 paths:
-  '/users/{username}': # path parameter in curly braces
-    # documentation for GET operation for this path
-    
-    # parameters list that are used with each operation for this path
-    parameters:
-      - name: pretty_print
-        in: query # place where parameter is passed: path, header, query or body, formData
-        description: Pretty print response
-        # type of the parameter: string, number, integer, boolean, array
-        type: boolean
+  '/auth': 
     get:
       tags:
-        - User
+        - Auth
       
       # summary is up to 120 symbold but we recommend to be shortest as possible
-      summary: Get user by user name
+      summary: Authentication with Google 
       
-      # you can use GFM in operation description too: https://guides.github.com/features/mastering-markdown
       description: | 
-        Some description of the operation. 
-        You can use `markdown` here.
+        This call will provide a token (after authenticating with Google) which could be used in order to authenticate yourself when you call other CogniAPI services to offer you more interesting and complete features
       
-      # operationId should be unique across the whole specification
-      operationId: getUserByName
+      operationId: auth
       
-      # list of parameters for the operation
-      parameters:
-        - name: username
-          in: path
-          description: 'The name that needs to be fetched'
-          required: true
-          type: string
-        - name: with_email
-          in: query
-          description: Filter users without email
-          type: boolean
-      
-      # security schemas applied to this operation
-      security:
-        - main_auth:
-          - 'read:users' # for auth2 provide list of scopes here
-        - api_key: []
       # overwriting default global produces
       produces:
         - application/json
@@ -139,111 +80,327 @@ paths:
         '200':
           description: Success
           schema: # response schema can be specified for each response
-            $ref: '#/definitions/User'
-          examples:
-          # response samples for each type operation produces
-            application/json:
-              username: user1
-              email: user@example.com
-        '403':
-          description: Forbidden
-        '404':
-          description: User not found
-    # documentation for PUT operation for this path
-    put:
+            $ref: '#/definitions/Token'
+        '500':
+          description: Internal Server Error
+          
+  '/analyse': 
+  
+    parameters:
+    - in: header
+      name: UserToken
+      type: string
+      required: false
+      description: Optional token which can be used to identify the logged user and to provide additional features (use /auth in order to get one)
+      
+    - in: query
+      name: utoken
+      type: string
+      required: false
+      description: Optional token which can be used to identify the logged user and to provide additional features (use /auth in order to get one)
+      
+    get:
       tags:
-        - User
-      summary: Updated user
-      description: This can only be done by the logged in user.
-      operationId: updateUser
+        - Analyse
+      
+      summary: Complete image analysis 
+      
+      description: | 
+        This call will probably be the most useful since it combines in a 
+        single response all the valuable information extracted from the cognitive services mentioned above and show them in a unified schema
+      
+      operationId: analyse
+      
+      parameters:
+      - in: query
+        name: url
+        type: string
+        required: true
+        description: Link of the image which has to be analysed
+      
+      # overwriting default global produces
       produces:
         - application/json
-      parameters:
-        - name: username
-          in: path
-          description: The name that needs to be updated
-          required: true
-          type: string
-        - in: body
-          name: body
-          description: Updated user object
-          required: true
-          # for body parameter you should specify request schema instead of type
-          schema:
-            $ref: '#/definitions/User'
-      security:
-        - main_auth:
-          - 'write:users'
-      responses:
+      responses: # list of responses
         '200':
-          description: OK
+          description: Success
+          schema: # response schema can be specified for each response
+            $ref: '#/definitions/ImageAnnotation'
         '400':
-          description: Invalid user supplied
-        '404':
-          description: User not found
-  
-  '/echo':
-    post:
+          description: Bad Request
+          
+  '/analyse/faces': 
+    parameters:
+    - in: header
+      name: UserToken
+      type: string
+      required: false
+      description: Optional token which can be used to identify the logged user and to provide additional features (use /auth in order to get one)
+      
+    - in: query
+      name: utoken
+      type: string
+      required: false
+      description: Optional token which can be used to identify the logged user and to provide additional features (use /auth in order to get one)
+      
+    get:
       tags:
-        - Echo
-      summary: Echo test
-      description: Receive the exact message you've sent
-      operationId: echo
+        - Analyse
+      
+      summary: Description of image content
+      
+      description: | 
+        This call will provide a full face detection and recogntion of the image (the second one will be performed just if the user is logged)
+      
+      operationId: analyseFace
+      
       parameters:
-        - name: message
-          in: body
-          description: 'Echo payload'
-          required: true
-          schema:
-            type: string
-            example: 'Hello world!'
-      security:
-        - api_key: []
-      responses:
+      - in: query
+        name: url
+        type: string
+        required: true
+        description: Link of the image which has to be analysed
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
         '200':
-          description: 'OK'
-          examples:
-            'application/json': 'Hello world!'
-          schema:
-            type: string
-          # document headers for this response
-          headers:
-            X-Rate-Limit: # Header name
-              type: integer # Header value type
-              format: int32 # Header value format
-              description: calls per hour allowed by the user
-            X-Expires-After:
-              type: string
-              format: date-time
-              description: date in UTC when token expires
-# An object to hold data types that can be consumed and produced by operations.
-# These data types can be primitives, arrays or models.
+          description: Success
+          schema: # response schema can be specified for each response
+            type: array
+            items:
+              $ref: '#/definitions/Face'
+        '400':
+          description: Bad Request
+  
+  '/analyse/tags': 
+    get:
+      tags:
+        - Analyse
+      
+      summary: Image tag analysis 
+      
+      description: | 
+        This call provides just tag and labels, respect to what it's possible to obtain with a full and complete /analyse call
+      
+      operationId: analyseTag
+      
+      parameters:
+      - in: query
+        name: url
+        type: string
+        required: true
+        description: Link of the image which has to be analysed
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
+        '200':
+          description: Success
+          schema: # response schema can be specified for each response
+            type: array
+            items:
+              $ref: '#/definitions/Tag'
+        '400':
+          description: Bad Request
+          
+  '/analyse/objects': 
+    get:
+      tags:
+        - Analyse
+      
+      summary: Image objects detection 
+      
+      description: | 
+        This call provides just detected objects, respect to what it's possible to obtain with a full and complete /analyse call
+      
+      operationId: analyseObject
+      
+      parameters:
+      - in: query
+        name: url
+        type: string
+        required: true
+        description: Link of the image which has to be analysed
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
+        '200':
+          description: Success
+          schema: # response schema can be specified for each response
+            type: array
+            items:
+              $ref: '#/definitions/Tag'
+        '400':
+          description: Bad Request
+          
+  '/analyse/description': 
+    get:
+      tags:
+        - Analyse
+      
+      summary: Description of image content
+      
+      description: | 
+        This call provides a brief description of the image content: there will be a bunch of generic tags, grouped by concept, some captions and a classification based on a 86 category taxonomy defined here https://docs.microsoft.com/en-us/azure/cognitive-services/Computer-vision/category-taxonomy
+      
+      operationId: analyseDescription
+      
+      parameters:
+      - in: query
+        name: url
+        type: string
+        required: true
+        description: Link of the image which has to be analysed
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
+        '200':
+          description: Success
+          schema: # response schema can be specified for each response
+            $ref: '#/definitions/Description'
+        '400':
+          description: Bad Request
+          
+  '/analyse/texts': 
+    get:
+      tags:
+        - Analyse
+      
+      summary: Text detection of supplied the image
+      
+      description: | 
+        This call will return the text which has been detected inside the image
+      
+      operationId: analyseText
+      
+      parameters:
+      - in: query
+        name: url
+        type: string
+        required: true
+        description: Link of the image which has to be analysed
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
+        '200':
+          description: Success
+          schema: # response schema can be specified for each response
+            type: array
+            items:
+              $ref: '#/definitions/Text'
+        '400':
+          description: Bad Request
+  
+  '/analyse/landmarks': 
+    get:
+      tags:
+        - Analyse
+      
+      summary: Landmark detection of supplied the image
+      
+      description: | 
+        This call will return the text which has been detected inside the image
+      
+      operationId: analyseLandmarks
+      
+      parameters:
+      - in: query
+        name: url
+        type: string
+        required: true
+        description: Link of the image which has to be analysed
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
+        '200':
+          description: Success
+          schema: # response schema can be specified for each response
+            type: array
+            items:
+              $ref: '#/definitions/Landmark'
+        '400':
+          description: Bad Request
+          
+  '/analyse/safety': 
+    get:
+      tags:
+        - Analyse
+      
+      summary: Safety tags annotation of supplied the image
+      
+      description: | 
+        This call will return the text which has been detected inside the image
+      
+      operationId: analyseSafety
+      
+      parameters:
+      - in: query
+        name: url
+        type: string
+        required: true
+        description: Link of the image which has to be analysed
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
+        '200':
+          description: Success
+          schema: # response schema can be specified for each response
+            $ref: '#/definitions/SafetyAnnotation'
+        '400':
+          description: Bad Request
+  
+  '/analyse/colors': 
+    get:
+      tags:
+        - Analyse
+      
+      summary: Color analysis of image content
+      
+      description: | 
+        This call provides a complete analysis of the image colors 
+      
+      operationId: analyseColor
+      
+      parameters:
+      - in: query
+        name: url
+        type: string
+        required: true
+        description: Link of the image which has to be analysed
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
+        '200':
+          description: Success
+          schema: # response schema can be specified for each response
+            $ref: '#/definitions/GraphicalData'
+        '400':
+          description: Bad Request
+              
+# Definitions of the object properties which characterize the APIs
 definitions:
-  Email:
-    description: User email address
-    type: string
-    format: email
-    example: john.smith@example.com
-  User:
+  
+  Token:
     type: object
     properties:
-      username:
-        description: User supplied username
+      token:
         type: string
-        minLength: 4
-        example: John78
-      firstName:
-        description: User first name
-        type: string
-        minLength: 1
-        example: John
-      lastName:
-        description: User last name
-        type: string
-        minLength: 1
-        example: Smith
-      email:
-        $ref: '#/definitions/Email'
+        description: "This has to be used in the header (UserToken: Bearer <token>) or in the url as url?utoken=<token> as a way to allow the APIs to recognize the logged user"
   
   Point2d:
     type: object
@@ -459,6 +616,80 @@ definitions:
         minimum: 0
         maximum: 1
   
+  FaceLandmarksAnnotation:
+    type: object
+    properties:
+      UNKNOWN_LANDMARK:
+        $ref: '#/definitions/Point3d'
+      LEFT_EYE:
+        $ref: '#/definitions/Point3d'
+      RIGHT_EYE:
+        $ref: '#/definitions/Point3d'
+      LEFT_OF_LEFT_EYEBROW:
+        $ref: '#/definitions/Point3d'
+      RIGHT_OF_LEFT_EYEBROW:
+        $ref: '#/definitions/Point3d'
+      LEFT_OF_RIGHT_EYEBROW:
+        $ref: '#/definitions/Point3d'
+      RIGHT_OF_RIGHT_EYEBROW:
+        $ref: '#/definitions/Point3d'
+      MIDPOINT_BETWEEN_EYES:
+        $ref: '#/definitions/Point3d'
+      NOSE_TIP:
+        $ref: '#/definitions/Point3d'
+      UPPER_LIP:
+        $ref: '#/definitions/Point3d'
+      LOWER_LIP:
+        $ref: '#/definitions/Point3d'
+      MOUTH_LEFT:
+        $ref: '#/definitions/Point3d'
+      MOUTH_RIGHT:
+        $ref: '#/definitions/Point3d'
+      MOUTH_CENTER:
+        $ref: '#/definitions/Point3d'
+      NOSE_BOTTOM_RIGHT:
+        $ref: '#/definitions/Point3d'
+      NOSE_BOTTOM_LEFT:
+        $ref: '#/definitions/Point3d'
+      NOSE_BOTTOM_CENTER:
+        $ref: '#/definitions/Point3d'
+      LEFT_EYE_TOP_BOUNDARY:
+        $ref: '#/definitions/Point3d'
+      LEFT_EYE_RIGHT_CORNER:
+        $ref: '#/definitions/Point3d'
+      LEFT_EYE_BOTTOM_BOUNDARY:
+        $ref: '#/definitions/Point3d'
+      LEFT_EYE_LEFT_CORNER:
+        $ref: '#/definitions/Point3d'
+      RIGHT_EYE_TOP_BOUNDARY:
+        $ref: '#/definitions/Point3d'
+      RIGHT_EYE_RIGHT_CORNER:
+        $ref: '#/definitions/Point3d'
+      RIGHT_EYE_BOTTOM_BOUNDARY:
+        $ref: '#/definitions/Point3d'
+      RIGHT_EYE_LEFT_CORNER:
+        $ref: '#/definitions/Point3d'
+      LEFT_EYEBROW_UPPER_MIDPOINT:
+        $ref: '#/definitions/Point3d'
+      RIGHT_EYEBROW_UPPER_MIDPOINT:
+        $ref: '#/definitions/Point3d'
+      LEFT_EAR_TRAGION:
+        $ref: '#/definitions/Point3d'
+      RIGHT_EAR_TRAGION:
+        $ref: '#/definitions/Point3d'
+      LEFT_EYE_PUPIL:
+        $ref: '#/definitions/Point3d'
+      RIGHT_EYE_PUPIL:
+        $ref: '#/definitions/Point3d'
+      FOREHEAD_GLABELLA:
+        $ref: '#/definitions/Point3d'
+      CHIN_GNATHION:
+        $ref: '#/definitions/Point3d'
+      CHIN_LEFT_GONION:
+        $ref: '#/definitions/Point3d'
+      CHIN_RIGHT_GONION:
+        $ref: '#/definitions/Point3d'
+  
   TagNoBound:
     type: object
     properties:
@@ -637,6 +868,21 @@ definitions:
         description: Confidence value expressed as the likelihood label offered by Google Cloud Vision
         type: string
         enum: [ 'UNKNOWN', 'VERY_UNLIKELY', 'UNLIKELY, POSSIBLE', 'LIKELY', 'VERY_LIKELY' ]
+  
+  SafetyAnnotation:
+    type: object
+    properties:
+      racy:
+        $ref: '#/definitions/SafetyProperty'
+      adult:
+        $ref: '#/definitions/SafetyProperty'
+      violence:
+        $ref: '#/definitions/SafetyProperty'
+      medical:
+        $ref: '#/definitions/SafetyProperty'
+      spoof:
+        $ref: '#/definitions/SafetyProperty'
+  
   Metadata:
     type: object
     properties:
@@ -674,6 +920,8 @@ definitions:
         enum: ['NoGlasses', 'ReadingGlasses', 'Sunglasses', 'SwimmingGoggles']
       faceRectangle:
         $ref: '#/definitions/BoundingBox'
+      landmarks:
+        $ref: '#/definitions/FaceLandmarksAnnotation'
       similarFaces:
         type: array
         items:
@@ -751,15 +999,4 @@ definitions:
         items:
           $ref: '#/definitions/Face'
       safetyAnnotations:
-        type: object
-        properties:
-          racy:
-            $ref: '#/definitions/SafetyProperty'
-          adult:
-            $ref: '#/definitions/SafetyProperty'
-          violence:
-            $ref: '#/definitions/SafetyProperty'
-          medical:
-            $ref: '#/definitions/SafetyProperty'
-          spoof:
-            $ref: '#/definitions/SafetyProperty'
+        $ref: '#/definitions/SafetyAnnotation'
