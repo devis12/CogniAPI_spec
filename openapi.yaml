@@ -577,105 +577,6 @@ paths:
               $ref: '#/definitions/AzureFace'
         '400':
           description: Bad Request
-    post:
-      tags:
-        - AzureMg
-      summary: Add face to your face group in order to persist some user data related to it and recognize it when in future image submissions there will be a similar one
-      description: |
-        This call provides a way for you to store some user data related to a face, so they will pop out again when a face similar to the one you're storing will be detected (mandatory to perform face training in the between order to achieve this final result)
-      operationId: AzureAddFace
-      consumes:
-        - application/json
-        - application/x-www-form-urlencoded
-      parameters:
-        - in: path
-          name: user
-          type: string
-          required: true
-          description: 'User token which can be used to identify the logged user, so to perform operations on the face group related to him'
-        - in: formData
-          name: imageUrl
-          type: string
-          required: true
-          description: Url of the image in which the face has been detected
-        - in: formData
-          name: target
-          type: string
-          required: true
-          description: 'left,top,width,height values passed in this very order as a string separated by comma values (example ''232,435,190,195''). You can retrieve this value from precedent analysis and face detection, where the top value it''s just the y of the {tl} or {tr} corner and the left value it''s the x coordinate of the {bl} or {tl} corner (width and height are already given in the faceRectangle)'
-        - in: formData
-          name: userData
-          type: string
-          required: true
-          description: User data you want to associate to this face
-      produces:
-        - application/json
-      responses:
-        '200':
-          description: Success
-        '400':
-          description: Bad Request
-    patch:
-      tags:
-        - AzureMg
-      summary: Update face to your face group in order to persist new user data related to it and recognize it when in future image submissions there will be a similar one
-      description: |
-        This call provides a way for you to update the stored user data related to a face, so they will pop out again when a face similar to the one you're storing will be detected (mandatory to perform face training in the between order to achieve this final result)
-      operationId: AzurePatchFace
-      consumes:
-        - application/json
-        - application/x-www-form-urlencoded
-      parameters:
-        - in: path
-          name: user
-          type: string
-          required: true
-          description: 'User token which can be used to identify the logged user, so to perform operations on the face group related to him'
-        - in: formData
-          name: persistedFaceId
-          type: string
-          required: true
-          description: Id of the persisted face (you can have it in the similarFace arrat resulted from previous analysis)
-        - in: formData
-          name: userData
-          type: string
-          required: true
-          description: User data you want to associate to this face
-      produces:
-        - application/json
-      responses:
-        '200':
-          description: Success
-        '400':
-          description: Bad Request
-    delete:
-      tags:
-        - AzureMg
-      summary: Update face to your face group in order to persist new user data related to it and recognize it when in future image submissions there will be a similar one
-      description: |
-        This call provides a way for you to delete the stored user data related to a face, so they won't pop out again when a face similar to the one you're storing will be detected (mandatory to perform face training in the between order to achieve this final result)
-      operationId: AzureDeleteFace
-      consumes:
-        - application/json
-        - application/x-www-form-urlencoded
-      parameters:
-        - in: path
-          name: user
-          type: string
-          required: true
-          description: 'User token which can be used to identify the logged user, so to perform operations on the face group related to him'
-        - in: formData
-          name: persistedFaceId
-          type: string
-          required: true
-          description: Id of the persisted face (you can have it in the similarFace arrat resulted from previous analysis)
-      produces:
-        - application/json
-      responses:
-        '200':
-          description: Success
-        '400':
-          description: Bad Request
   /azure/tags:
     get:
       tags:
@@ -820,7 +721,107 @@ paths:
             $ref: '#/definitions/AzureGraphicalData'
         '400':
           description: Bad Request
-  /azure/faces/train/:
+  '/azure/faces/{user}':
+    post:
+      tags:
+        - AzureMg
+      summary: Add face to your face group in order to persist some user data related to it and recognize it when in future image submissions there will be a similar one
+      description: |
+        This call provides a way for you to store some user data related to a face, so they will pop out again when a face similar to the one you're storing will be detected (mandatory to perform face training in the between order to achieve this final result)
+      operationId: AzureAddFace
+      consumes:
+        - application/json
+        - application/x-www-form-urlencoded
+      parameters:
+        - in: path
+          name: user
+          type: string
+          required: true
+          description: 'User token which can be used to identify the logged user, so to perform operations on the face group related to him'
+        - in: formData
+          name: imageUrl
+          type: string
+          required: true
+          description: Url of the image in which the face has been detected
+        - in: formData
+          name: target
+          type: string
+          required: true
+          description: 'left,top,width,height values passed in this very order as a string separated by comma values (example ''232,435,190,195''). You can retrieve this value from precedent analysis and face detection, where the top value it''s just the y of the {tl} or {tr} corner and the left value it''s the x coordinate of the {bl} or {tl} corner (width and height are already given in the faceRectangle)'
+        - in: formData
+          name: userData
+          type: string
+          required: true
+          description: User data you want to associate to this face
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+        '400':
+          description: Bad Request
+    patch:
+      tags:
+        - AzureMg
+      summary: Update face to your face group in order to persist new user data related to it and recognize it when in future image submissions there will be a similar one
+      description: |
+        This call provides a way for you to update the stored user data related to a face, so they will pop out again when a face similar to the one you're storing will be detected (mandatory to perform face training in the between order to achieve this final result)
+      operationId: AzurePatchFace
+      consumes:
+        - application/json
+        - application/x-www-form-urlencoded
+      parameters:
+        - in: path
+          name: user
+          type: string
+          required: true
+          description: 'User token which can be used to identify the logged user, so to perform operations on the face group related to him'
+        - in: formData
+          name: persistedFaceId
+          type: string
+          required: true
+          description: Id of the persisted face (you can have it in the similarFace arrat resulted from previous analysis)
+        - in: formData
+          name: userData
+          type: string
+          required: true
+          description: User data you want to associate to this face
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+        '400':
+          description: Bad Request
+    delete:
+      tags:
+        - AzureMg
+      summary: Update face to your face group in order to persist new user data related to it and recognize it when in future image submissions there will be a similar one
+      description: |
+        This call provides a way for you to delete the stored user data related to a face, so they won't pop out again when a face similar to the one you're storing will be detected (mandatory to perform face training in the between order to achieve this final result)
+      operationId: AzureDeleteFace
+      consumes:
+        - application/json
+        - application/x-www-form-urlencoded
+      parameters:
+        - in: path
+          name: user
+          type: string
+          required: true
+          description: 'User token which can be used to identify the logged user, so to perform operations on the face group related to him'
+        - in: formData
+          name: persistedFaceId
+          type: string
+          required: true
+          description: Id of the persisted face (you can have it in the similarFace arrat resulted from previous analysis)
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+        '400':
+          description: Bad Request
+  '/azure/faces/train/{user}':
     post:
       tags:
         - AzureMg
@@ -1273,7 +1274,6 @@ definitions:
           minimum: 0
           maximum: 1
         color:
-          description: RGBA value for this color
           $ref: '#/definitions/RGBA'
   GraphicalData:
     type: object
@@ -1304,7 +1304,6 @@ definitions:
         description: True if the image content is detected as drawn by a human
         type: boolean
       colorInfoRGBA:
-        description: Color Info with rgba values and px fraction
         $ref: '#/definitions/ColorInfoRGBA'
   AzureGraphicalData:
     type: object
@@ -1338,7 +1337,6 @@ definitions:
     type: object
     properties:
       colorInfoRGBA:
-        description: Color Info with rgba values and px fraction
         $ref: '#/definitions/ColorInfoRGBA'
   ConfidenceLabel:
     type: string
@@ -1462,7 +1460,6 @@ definitions:
         items:
           $ref: '#/definitions/PersistedFace'
       celebrity:
-        description: Tag present if it is the face of a recognized celebrity
         $ref: '#/definitions/TagNoBound'
       facialHair:
         $ref: '#/definitions/FacialHair'
@@ -1542,7 +1539,6 @@ definitions:
         items:
           $ref: '#/definitions/PersistedFace'
       celebrity:
-        description: Tag present if it is the face of a recognized celebrity
         $ref: '#/definitions/TagNoBound'
       facialHair:
         $ref: '#/definitions/FacialHair'
