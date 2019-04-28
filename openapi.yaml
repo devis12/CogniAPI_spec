@@ -724,7 +724,7 @@ paths:
   '/azure/faces/{user}':
     post:
       tags:
-        - AzureMg
+        - AzureFaceMg
       summary: Add face to your face group in order to persist some user data related to it and recognize it when in future image submissions there will be a similar one
       description: |
         This call provides a way for you to store some user data related to a face, so they will pop out again when a face similar to the one you're storing will be detected (mandatory to perform face training in the between order to achieve this final result)
@@ -762,7 +762,7 @@ paths:
           description: Bad Request
     patch:
       tags:
-        - AzureMg
+        - AzureFaceMg
       summary: Update face to your face group in order to persist new user data related to it and recognize it when in future image submissions there will be a similar one
       description: |
         This call provides a way for you to update the stored user data related to a face, so they will pop out again when a face similar to the one you're storing will be detected (mandatory to perform face training in the between order to achieve this final result)
@@ -795,7 +795,7 @@ paths:
           description: Bad Request
     delete:
       tags:
-        - AzureMg
+        - AzureFaceMg
       summary: Update face to your face group in order to persist new user data related to it and recognize it when in future image submissions there will be a similar one
       description: |
         This call provides a way for you to delete the stored user data related to a face, so they won't pop out again when a face similar to the one you're storing will be detected (mandatory to perform face training in the between order to achieve this final result)
@@ -824,7 +824,7 @@ paths:
   '/azure/faces/train/{user}':
     post:
       tags:
-        - AzureMg
+        - AzureFaceMg
       summary: 'Train your face group (mandatory after adding, patching or deleting face operations)'
       description: |
         This call provides a way for you to start training your cognitive service, in order to have a good face recognition system 
