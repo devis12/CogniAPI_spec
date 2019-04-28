@@ -917,7 +917,7 @@ paths:
   '/azure/faces/{user}':   
     post:
       tags:
-        - AzureMg
+        - AzureFaceMg
       
       summary: Add face to your face group in order to persist some user data related to it and recognize it when in future image submissions there will be a similar one
       
@@ -966,7 +966,7 @@ paths:
     
     patch:
       tags:
-        - AzureMg
+        - AzureFaceMg
       
       summary: Update face to your face group in order to persist new user data related to it and recognize it when in future image submissions there will be a similar one
       
@@ -1009,7 +1009,7 @@ paths:
           
     delete:
       tags:
-        - AzureMg
+        - AzureFaceMg
       
       summary: Update face to your face group in order to persist new user data related to it and recognize it when in future image submissions there will be a similar one
       
@@ -1048,7 +1048,7 @@ paths:
   '/azure/faces/train/{user}': 
     post:
       tags:
-        - AzureMg
+        - AzureFaceMg
       
       summary: Train your face group (mandatory after adding, patching or deleting face operations)
       
