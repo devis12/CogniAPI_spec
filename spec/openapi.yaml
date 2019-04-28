@@ -48,8 +48,6 @@ consumes:
 # A list of tags used by the specification with additional metadata.
 # The order of the tags can be used to reflect on their order by the parsing tools.
 tags:
-  - name: Auth
-    description: Authentication operations
   - name: Analyse
     description: Image Analysis operations provided by CogniAPI
   - name: AsyncAnalyse
@@ -58,47 +56,12 @@ tags:
     description: Image Analysis operations provided just by Google Cloud Vision
   - name: Azure
     description: Image Analysis operations provided just by Azure Computer Vision and Azure Face
+  - name: AzureFaceMg
+    description: Face training operations provided just by Azure Face
 
 paths:
-  '/auth': 
-    get:
-      tags:
-        - Auth
-      
-      # summary is up to 120 symbold but we recommend to be shortest as possible
-      summary: Authentication with Google 
-      
-      description: | 
-        This call will provide a token (after authenticating with Google) which could be used in order to authenticate yourself when you call other CogniAPI services to offer you more interesting and complete features
-      
-      operationId: auth
-      
-      # overwriting default global produces
-      produces:
-        - application/json
-      responses: # list of responses
-        '200':
-          description: Success
-          schema: # response schema can be specified for each response
-            $ref: '#/definitions/Token'
-        '500':
-          description: Internal Server Error
           
   '/analyse': 
-  
-    parameters:
-    - in: header
-      name: UserToken
-      type: string
-      required: false
-      description: Optional token which can be used to identify the logged user and to provide additional features (use /auth in order to get one)
-      
-    - in: query
-      name: utoken
-      type: string
-      required: false
-      description: Optional token which can be used to identify the logged user and to provide additional features (use /auth in order to get one)
-      
     get:
       tags:
         - Analyse
@@ -107,11 +70,24 @@ paths:
       
       description: | 
         This call will probably be the most useful since it combines in a 
-        single response all the valuable information extracted from the cognitive services mentioned above and show them in a unified schema
+        single response all the valuable information extracted from the cognitive services mentioned above and showing them in a unified schema
       
       operationId: analyse
       
       parameters:
+      - in: query
+        name: user
+        type: string
+        required: false
+        description: Optional user token which can be used to identify the logged user and to provide additional features (use /auth in order to get one)
+      - in: query
+        name: minscore
+        type: number
+        required: false
+        default: 0
+        minimum: 0
+        maximum: 1
+        description: Optional score value. You can set the minimum threshold in order to filter out tags and objects with low confidence values. (If you go off the range [0,1] this value will be set to default automatically)
       - in: query
         name: url
         type: string
@@ -130,24 +106,11 @@ paths:
           description: Bad Request
           
   '/analyse/faces': 
-    parameters:
-    - in: header
-      name: UserToken
-      type: string
-      required: false
-      description: Optional token which can be used to identify the logged user and to provide additional features (use /auth in order to get one)
-      
-    - in: query
-      name: utoken
-      type: string
-      required: false
-      description: Optional token which can be used to identify the logged user and to provide additional features (use /auth in order to get one)
-      
     get:
       tags:
         - Analyse
       
-      summary: Description of image content
+      summary: Analysis of detected faces in the image
       
       description: | 
         This call will provide a full face detection and recogntion of the image (the second one will be performed just if the user is logged)
@@ -155,6 +118,11 @@ paths:
       operationId: analyseFace
       
       parameters:
+      - in: query
+        name: user
+        type: string
+        required: false
+        description: Optional user token which can be used to identify the logged user and to provide additional features (use /auth in order to get one)
       - in: query
         name: url
         type: string
@@ -192,6 +160,14 @@ paths:
         type: string
         required: true
         description: Link of the image which has to be analysed
+      - in: query
+        name: minscore
+        type: number
+        required: false
+        default: 0
+        minimum: 0
+        maximum: 1
+        description: Optional score value. You can set the minimum threshold in order to filter out tags with low confidence values. (If you go off the range [0,1] this value will be set to default automatically)
       
       # overwriting default global produces
       produces:
@@ -202,7 +178,7 @@ paths:
           schema: # response schema can be specified for each response
             type: array
             items:
-              $ref: '#/definitions/Tag'
+              $ref: '#/definitions/TagNoBound'
         '400':
           description: Bad Request
           
@@ -224,6 +200,14 @@ paths:
         type: string
         required: true
         description: Link of the image which has to be analysed
+      - in: query
+        name: minscore
+        type: number
+        required: false
+        default: 0
+        minimum: 0
+        maximum: 1
+        description: Optional score value. You can set the minimum threshold in order to filter out objects with low confidence values. (If you go off the range [0,1] this value will be set to default automatically)
       
       # overwriting default global produces
       produces:
@@ -273,7 +257,7 @@ paths:
       tags:
         - Analyse
       
-      summary: Text detection of supplied the image
+      summary: Text detection of supplied image
       
       description: | 
         This call will return the text which has been detected inside the image
@@ -305,7 +289,7 @@ paths:
       tags:
         - Analyse
       
-      summary: Landmark detection of supplied the image
+      summary: Landmark detection of supplied image
       
       description: | 
         This call will return the text which has been detected inside the image
@@ -337,7 +321,7 @@ paths:
       tags:
         - Analyse
       
-      summary: Safety tags annotation of supplied the image
+      summary: Safety tags annotation of supplied image
       
       description: | 
         This call will return the text which has been detected inside the image
@@ -391,16 +375,704 @@ paths:
             $ref: '#/definitions/GraphicalData'
         '400':
           description: Bad Request
-              
+  
+  '/gcloud/analyse': 
+    get:
+      tags:
+        - GCloud
+      
+      summary: Complete image analysis 
+      
+      description: | 
+        This call will provide in a single response all the valuable information extracted from the cognitive services using just gcloud vision and showing them in a unified schema (no need to authenticate yourself because google cloud vision doesn't supply any face recognition service)
+      
+      operationId: GCloudAnalyse
+      
+      parameters:
+      - in: query
+        name: url
+        type: string
+        required: true
+        description: Link of the image which has to be analysed
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
+        '200':
+          description: Success
+          schema: # response schema can be specified for each response
+            $ref: '#/definitions/GCloudImageAnnotation'
+        '400':
+          description: Bad Request
+          
+  '/gcloud/faces': 
+    get:
+      tags:
+        - GCloud
+      
+      summary: Face detected in the image 
+      
+      description: | 
+        This call will provide a full face detection of the image with the data which google cloud provide
+      
+      operationId: GCloudAnalyseFace
+      
+      parameters:
+      - in: query
+        name: url
+        type: string
+        required: true
+        description: Link of the image which has to be analysed
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
+        '200':
+          description: Success
+          schema: # response schema can be specified for each response
+            type: array
+            items:
+              $ref: '#/definitions/GCloudFace'
+        '400':
+          description: Bad Request
+          
+  '/gcloud/tags': 
+    get:
+      tags:
+        - GCloud
+      
+      summary: Image tag analysis 
+      
+      description: | 
+        This call provides just tag and labels, respect to what it's possible to obtain with a full and complete /analyse call
+      
+      operationId: GCloudAnalyseTag
+      
+      parameters:
+      - in: query
+        name: url
+        type: string
+        required: true
+        description: Link of the image which has to be analysed
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
+        '200':
+          description: Success
+          schema: # response schema can be specified for each response
+            type: array
+            items:
+              $ref: '#/definitions/TagNoBound'
+        '400':
+          description: Bad Request
+          
+  '/gcloud/objects': 
+    get:
+      tags:
+        - GCloud
+      
+      summary: Image objects detection 
+      
+      description: | 
+        This call provides just detected objects, respect to what it's possible to obtain with a full and complete /analyse call
+      
+      operationId: GCloudAnalyseObject
+      
+      parameters:
+      - in: query
+        name: url
+        type: string
+        required: true
+        description: Link of the image which has to be analysed
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
+        '200':
+          description: Success
+          schema: # response schema can be specified for each response
+            type: array
+            items:
+              $ref: '#/definitions/Tag'
+        '400':
+          description: Bad Request
+          
+  '/gcloud/description': 
+    get:
+      tags:
+        - GCloud
+      
+      summary: Description of image content
+      
+      description: | 
+        This call provides a brief description of the image content: there will be a bunch of generic tags, grouped by concept
+      
+      operationId: GCloudAnalyseDescription
+      
+      parameters:
+      - in: query
+        name: url
+        type: string
+        required: true
+        description: Link of the image which has to be analysed
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
+        '200':
+          description: Success
+          schema: # response schema can be specified for each response
+            $ref: '#/definitions/GCloudDescription'
+        '400':
+          description: Bad Request
+          
+  '/gcloud/texts': 
+    get:
+      tags:
+        - GCloud
+      
+      summary: Text detection of supplied image
+      
+      description: | 
+        This call will return the text which has been detected inside the image
+      
+      operationId: GCloudAnalyseText
+      
+      parameters:
+      - in: query
+        name: url
+        type: string
+        required: true
+        description: Link of the image which has to be analysed
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
+        '200':
+          description: Success
+          schema: # response schema can be specified for each response
+            type: array
+            items:
+              $ref: '#/definitions/Text'
+        '400':
+          description: Bad Request
+          
+  '/gcloud/landmarks': 
+    get:
+      tags:
+        - GCloud
+      
+      summary: Landmark detection of supplied image
+      
+      description: | 
+        This call will return the text which has been detected inside the image
+      
+      operationId: GCloudAnalyseLandmarks
+      
+      parameters:
+      - in: query
+        name: url
+        type: string
+        required: true
+        description: Link of the image which has to be analysed
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
+        '200':
+          description: Success
+          schema: # response schema can be specified for each response
+            type: array
+            items:
+              $ref: '#/definitions/Landmark'
+        '400':
+          description: Bad Request
+          
+  '/gcloud/safety': 
+    get:
+      tags:
+        - GCloud
+      
+      summary: Safety tags annotation of supplied image
+      
+      description: | 
+        This call will return the text which has been detected inside the image
+      
+      operationId: GCloudAnalyseSafety
+      
+      parameters:
+      - in: query
+        name: url
+        type: string
+        required: true
+        description: Link of the image which has to be analysed
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
+        '200':
+          description: Success
+          schema: # response schema can be specified for each response
+            $ref: '#/definitions/GCloudSafetyAnnotation'
+        '400':
+          description: Bad Request
+  
+  '/gcloud/colors': 
+    get:
+      tags:
+        - GCloud
+      
+      summary: Color analysis of image content
+      
+      description: | 
+        This call provides a complete analysis of the image colors 
+      
+      operationId: GCloudAnalyseColor
+      
+      parameters:
+      - in: query
+        name: url
+        type: string
+        required: true
+        description: Link of the image which has to be analysed
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
+        '200':
+          description: Success
+          schema: # response schema can be specified for each response
+            $ref: '#/definitions/GCloudGraphicalData'
+        '400':
+          description: Bad Request
+
+  '/azure/analyse': 
+    get:
+      tags:
+        - Azure
+      
+      summary: Complete image analysis 
+      
+      description: | 
+        This call will combine in a single response all the valuable information extracted from Azure Computer Vision and Azure Face apis showing them in a unified schema (in respect to the standard one)
+      
+      operationId: AzureAnalyse
+      
+      parameters:
+      - in: query
+        name: user
+        type: string
+        required: false
+        description: Optional user token which can be used to identify the logged user and to provide additional features (use /auth in order to get one)
+      - in: query
+        name: url
+        type: string
+        required: true
+        description: Link of the image which has to be analysed
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
+        '200':
+          description: Success
+          schema: # response schema can be specified for each response
+            $ref: '#/definitions/AzureImageAnnotation'
+        '400':
+          description: Bad Request
+          
+  '/azure/faces': 
+    get:
+      tags:
+        - Azure
+      
+      summary: Face detected in the image with recognition
+      
+      description: | 
+        This call will provide a full face detection of the image with the data which google cloud provide
+      
+      operationId: AzureAnalyseFace
+      
+      parameters:
+      - in: query
+        name: user
+        type: string
+        required: false
+        description: Optional user token which can be used to identify the logged user and to provide additional features (use /auth in order to get one)
+      - in: query
+        name: url
+        type: string
+        required: true
+        description: Link of the image which has to be analysed
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
+        '200':
+          description: Success
+          schema: # response schema can be specified for each response
+            type: array
+            items:
+              $ref: '#/definitions/AzureFace'
+        '400':
+          description: Bad Request
+    
+    post:
+      tags:
+        - AzureMg
+      
+      summary: Add face to your face group in order to persist some user data related to it and recognize it when in future image submissions there will be a similar one
+      
+      description: | 
+        This call provides a way for you to store some user data related to a face, so they will pop out again when a face similar to the one you're storing will be detected (mandatory to perform face training in the between order to achieve this final result)
+      
+      operationId: AzureAddFace
+      
+      consumes:
+        - application/json
+        - application/x-www-form-urlencoded
+      
+      parameters:
+      - in: path
+        name: user
+        type: string
+        required: true
+        description: User token which can be used to identify the logged user, so to perform operations on the face group related to him
+        
+      - in: formData
+        name: imageUrl
+        type: string
+        required: true
+        description: Url of the image in which the face has been detected
+        
+      - in: formData
+        name: target
+        type: string
+        required: true
+        description: left,top,width,height values passed in this very order as a string separated by comma values (example '232,435,190,195'). You can retrieve this value from precedent analysis and face detection, where the top value it's just the y of the {tl} or {tr} corner and the left value it's the x coordinate of the {bl} or {tl} corner (width and height are already given in the faceRectangle) 
+        
+      - in: formData
+        name: userData
+        type: string
+        required: true
+        description: User data you want to associate to this face
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
+        '200':
+          description: Success
+        '400':
+          description: Bad Request     
+    
+    patch:
+      tags:
+        - AzureMg
+      
+      summary: Update face to your face group in order to persist new user data related to it and recognize it when in future image submissions there will be a similar one
+      
+      description: | 
+        This call provides a way for you to update the stored user data related to a face, so they will pop out again when a face similar to the one you're storing will be detected (mandatory to perform face training in the between order to achieve this final result)
+      
+      operationId: AzurePatchFace
+      
+      consumes:
+        - application/json
+        - application/x-www-form-urlencoded
+      
+      parameters:
+      - in: path
+        name: user
+        type: string
+        required: true
+        description: User token which can be used to identify the logged user, so to perform operations on the face group related to him
+        
+      - in: formData
+        name: persistedFaceId
+        type: string
+        required: true
+        description: Id of the persisted face (you can have it in the similarFace arrat resulted from previous analysis)
+        
+      - in: formData
+        name: userData
+        type: string
+        required: true
+        description: User data you want to associate to this face
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
+        '200':
+          description: Success
+        '400':
+          description: Bad Request     
+          
+    delete:
+      tags:
+        - AzureMg
+      
+      summary: Update face to your face group in order to persist new user data related to it and recognize it when in future image submissions there will be a similar one
+      
+      description: | 
+        This call provides a way for you to delete the stored user data related to a face, so they won't pop out again when a face similar to the one you're storing will be detected (mandatory to perform face training in the between order to achieve this final result)
+      
+      operationId: AzureDeleteFace
+      
+      consumes:
+        - application/json
+        - application/x-www-form-urlencoded
+      
+      parameters:
+      - in: path
+        name: user
+        type: string
+        required: true
+        description: User token which can be used to identify the logged user, so to perform operations on the face group related to him
+        
+      - in: formData
+        name: persistedFaceId
+        type: string
+        required: true
+        description: Id of the persisted face (you can have it in the similarFace arrat resulted from previous analysis)
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
+        '200':
+          description: Success
+        '400':
+          description: Bad Request     
+          
+  '/azure/tags': 
+    get:
+      tags:
+        - Azure
+      
+      summary: Image tag analysis 
+      
+      description: | 
+        This call provides just tag and labels, respect to what it's possible to obtain with a full and complete /analyse call
+      
+      operationId: AzureAnalyseTag
+      
+      parameters:
+      - in: query
+        name: url
+        type: string
+        required: true
+        description: Link of the image which has to be analysed
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
+        '200':
+          description: Success
+          schema: # response schema can be specified for each response
+            type: array
+            items:
+              $ref: '#/definitions/TagNoBound'
+        '400':
+          description: Bad Request
+
+  '/azure/objects': 
+    get:
+      tags:
+        - Azure
+      
+      summary: Image objects detection 
+      
+      description: | 
+        This call provides just detected objects, respect to what it's possible to obtain with a full and complete /analyse call
+      
+      operationId: AzureAnalyseObject
+      
+      parameters:
+      - in: query
+        name: url
+        type: string
+        required: true
+        description: Link of the image which has to be analysed
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
+        '200':
+          description: Success
+          schema: # response schema can be specified for each response
+            type: array
+            items:
+              $ref: '#/definitions/Tag'
+        '400':
+          description: Bad Request
+          
+  '/azure/description': 
+    get:
+      tags:
+        - Azure
+      
+      summary: Description of image content
+      
+      description: | 
+        This call provides a brief description of the image content: there will be a bunch of generic tags, grouped by concept
+      
+      operationId: AzureAnalyseDescription
+      
+      parameters:
+      - in: query
+        name: url
+        type: string
+        required: true
+        description: Link of the image which has to be analysed
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
+        '200':
+          description: Success
+          schema: # response schema can be specified for each response
+            $ref: '#/definitions/Description'
+        '400':
+          description: Bad Request
+  
+  '/azure/landmarks': 
+    get:
+      tags:
+        - Azure
+      
+      summary: Landmark detection of supplied image
+      
+      description: | 
+        This call will return the text which has been detected inside the image
+      
+      operationId: AzureAnalyseLandmarks
+      
+      parameters:
+      - in: query
+        name: url
+        type: string
+        required: true
+        description: Link of the image which has to be analysed
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
+        '200':
+          description: Success
+          schema: # response schema can be specified for each response
+            type: array
+            items:
+              $ref: '#/definitions/TagNoBound'
+        '400':
+          description: Bad Request
+          
+  '/azure/safety': 
+    get:
+      tags:
+        - Azure
+      
+      summary: Safety tags annotation of supplied image
+      
+      description: | 
+        This call will return the text which has been detected inside the image
+      
+      operationId: AzureAnalyseSafety
+      
+      parameters:
+      - in: query
+        name: url
+        type: string
+        required: true
+        description: Link of the image which has to be analysed
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
+        '200':
+          description: Success
+          schema: # response schema can be specified for each response
+            $ref: '#/definitions/AzureSafetyAnnotation'
+        '400':
+          description: Bad Request
+  
+  '/azure/colors': 
+    get:
+      tags:
+        - Azure
+      
+      summary: Color analysis of image content
+      
+      description: | 
+        This call provides a complete analysis of the image colors 
+      
+      operationId: AzureAnalyseColor
+      
+      parameters:
+      - in: query
+        name: url
+        type: string
+        required: true
+        description: Link of the image which has to be analysed
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
+        '200':
+          description: Success
+          schema: # response schema can be specified for each response
+            $ref: '#/definitions/AzureGraphicalData'
+        '400':
+          description: Bad Request       
+          
+  '/azure/faces/train/': 
+    post:
+      tags:
+        - AzureMg
+      
+      summary: Train your face group (mandatory after adding, patching or deleting face operations)
+      
+      description: | 
+        This call provides a way for you to start training your cognitive service, in order to have a good face recognition system 
+      
+      operationId: AzureTrainFace
+      
+      parameters:
+      - in: path
+        name: user
+        type: string
+        required: true
+        description: User token which can be used to identify the logged user, so to perform operations on the face group related to him
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
+        '200':
+          description: Success
+        '400':
+          description: Bad Request      
+
 # Definitions of the object properties which characterize the APIs
 definitions:
-  
-  Token:
-    type: object
-    properties:
-      token:
-        type: string
-        description: "This has to be used in the header (UserToken: Bearer <token>) or in the url as url?utoken=<token> as a way to allow the APIs to recognize the logged user"
   
   Point2d:
     type: object
@@ -459,6 +1131,19 @@ definitions:
         description: Google Cloud Likelihood value in order to express the level of exposure
         type: string
         enum: [ 'UNKNOWN', 'VERY_UNLIKELY', 'UNLIKELY, POSSIBLE', 'LIKELY', 'VERY_LIKELY' ]
+        
+  AzureExposure:
+    type: object
+    properties:
+      exposureLevel:
+        description: Face exposure level
+        type: string
+        enum: ['GoodExposure', 'OverExposure', 'UnderExposure']
+      value:
+        description: Level of exposure expressed as a value between 0 and 1
+        type: number
+        minimum: 0
+        maximum: 1
   
   Blur:
     type: object
@@ -476,6 +1161,19 @@ definitions:
         description: Google Cloud Likelihood value in order to express the level of blurriness
         type: string
         enum: [ 'UNKNOWN', 'VERY_UNLIKELY', 'UNLIKELY, POSSIBLE', 'LIKELY', 'VERY_LIKELY' ]
+        
+  AzureBlur:
+    type: object
+    properties:
+      blurLevel:
+        description: Blur level
+        type: string
+        enum: ['Low', 'Medium', 'High']
+      value:
+        description: Level of blur expressed as a value between 0 and 1
+        type: number
+        minimum: 0
+        maximum: 1
         
   Noise:
     type: object
@@ -535,9 +1233,22 @@ definitions:
         minimum: 0
         maximum: 1
       confidenceLabel:
-        description: Google Cloud Likelihood value in order to express the level of blurriness
-        type: string
-        enum: [ 'UNKNOWN', 'VERY_UNLIKELY', 'UNLIKELY, POSSIBLE', 'LIKELY', 'VERY_LIKELY' ]
+        $ref: '#/definitions/ConfidenceLabel'
+        
+  AzureEmotion:
+    type: object
+    properties:
+      confidence:
+        description: Probability value between 0 and 1 in order to express the confidence of the presence of the identified object 
+        type: number
+        minimum: 0
+        maximum: 1
+        
+  GCloudEmotion:
+    type: object
+    properties:
+      confidenceLabel:
+        $ref: '#/definitions/ConfidenceLabel'
         
   HeadPose:
     type: object
@@ -607,7 +1318,7 @@ definitions:
       persistedFaceId:
         description: Persisted Face Id on Azure in the Face List Group related to the logged user
         type: string
-      persistedUserData:
+      userData:
         description: User Data linked to the persisted Face Id on Azure in the Face List Group related to the logged user (and provided by him/her in the first place)
         type: string
       confidence:
@@ -619,75 +1330,16 @@ definitions:
   FaceLandmarksAnnotation:
     type: object
     properties:
-      UNKNOWN_LANDMARK:
-        $ref: '#/definitions/Point3d'
-      LEFT_EYE:
-        $ref: '#/definitions/Point3d'
-      RIGHT_EYE:
-        $ref: '#/definitions/Point3d'
-      LEFT_OF_LEFT_EYEBROW:
-        $ref: '#/definitions/Point3d'
-      RIGHT_OF_LEFT_EYEBROW:
-        $ref: '#/definitions/Point3d'
-      LEFT_OF_RIGHT_EYEBROW:
-        $ref: '#/definitions/Point3d'
-      RIGHT_OF_RIGHT_EYEBROW:
-        $ref: '#/definitions/Point3d'
-      MIDPOINT_BETWEEN_EYES:
-        $ref: '#/definitions/Point3d'
-      NOSE_TIP:
-        $ref: '#/definitions/Point3d'
-      UPPER_LIP:
-        $ref: '#/definitions/Point3d'
-      LOWER_LIP:
-        $ref: '#/definitions/Point3d'
-      MOUTH_LEFT:
-        $ref: '#/definitions/Point3d'
-      MOUTH_RIGHT:
-        $ref: '#/definitions/Point3d'
-      MOUTH_CENTER:
-        $ref: '#/definitions/Point3d'
-      NOSE_BOTTOM_RIGHT:
-        $ref: '#/definitions/Point3d'
-      NOSE_BOTTOM_LEFT:
-        $ref: '#/definitions/Point3d'
-      NOSE_BOTTOM_CENTER:
-        $ref: '#/definitions/Point3d'
-      LEFT_EYE_TOP_BOUNDARY:
-        $ref: '#/definitions/Point3d'
-      LEFT_EYE_RIGHT_CORNER:
-        $ref: '#/definitions/Point3d'
-      LEFT_EYE_BOTTOM_BOUNDARY:
-        $ref: '#/definitions/Point3d'
-      LEFT_EYE_LEFT_CORNER:
-        $ref: '#/definitions/Point3d'
-      RIGHT_EYE_TOP_BOUNDARY:
-        $ref: '#/definitions/Point3d'
-      RIGHT_EYE_RIGHT_CORNER:
-        $ref: '#/definitions/Point3d'
-      RIGHT_EYE_BOTTOM_BOUNDARY:
-        $ref: '#/definitions/Point3d'
-      RIGHT_EYE_LEFT_CORNER:
-        $ref: '#/definitions/Point3d'
-      LEFT_EYEBROW_UPPER_MIDPOINT:
-        $ref: '#/definitions/Point3d'
-      RIGHT_EYEBROW_UPPER_MIDPOINT:
-        $ref: '#/definitions/Point3d'
-      LEFT_EAR_TRAGION:
-        $ref: '#/definitions/Point3d'
-      RIGHT_EAR_TRAGION:
-        $ref: '#/definitions/Point3d'
-      LEFT_EYE_PUPIL:
-        $ref: '#/definitions/Point3d'
-      RIGHT_EYE_PUPIL:
-        $ref: '#/definitions/Point3d'
-      FOREHEAD_GLABELLA:
-        $ref: '#/definitions/Point3d'
-      CHIN_GNATHION:
-        $ref: '#/definitions/Point3d'
-      CHIN_LEFT_GONION:
-        $ref: '#/definitions/Point3d'
-      CHIN_RIGHT_GONION:
+      type:
+        type: string
+        enum: [ 'UNKNOWN_LANDMARK', 'LEFT_EYE', 'RIGHT_EYE', 'LEFT_OF_LEFT_EYEBROW', 'RIGHT_OF_LEFT_EYEBROW', 'LEFT_OF_RIGHT_EYEBROW', 
+                'RIGHT_OF_RIGHT_EYEBROW', 'MIDPOINT_BETWEEN_EYES', 'NOSE_TIP', 'UPPER_LIP', 'LOWER_LIP', 'MOUTH_LEFT', 'MOUTH_RIGHT',
+                'MOUTH_CENTER', 'NOSE_BOTTOM_RIGHT', 'NOSE_BOTTOM_LEFT', 'NOSE_BOTTOM_CENTER', 'LEFT_EYE_TOP_BOUNDARY', 'LEFT_EYE_RIGHT_CORNER',  
+                'LEFT_EYE_BOTTOM_BOUNDARY', 'LEFT_EYE_LEFT_CORNER', 'RIGHT_EYE_TOP_BOUNDARY', 'RIGHT_EYE_RIGHT_CORNER',
+                'RIGHT_EYE_BOTTOM_BOUNDARY', 'RIGHT_EYE_LEFT_CORNER', 'LEFT_EYEBROW_UPPER_MIDPOINT', 'RIGHT_EYEBROW_UPPER_MIDPOINT', 'LEFT_EAR_TRAGION',
+                'RIGHT_EAR_TRAGION', LEFT_EYE_PUPIL, 'RIGHT_EYE_PUPIL', 'FOREHEAD_GLABELLA', 'CHIN_GNATHION', 'CHIN_LEFT_GONION', 'CHIN_RIGHT_GONION'
+              ]
+      position:
         $ref: '#/definitions/Point3d'
   
   TagNoBound:
@@ -774,6 +1426,17 @@ definitions:
         type: array
         items:
           $ref: '#/definitions/TagNoBound'
+          
+  GCloudDescription:
+    type: object
+    properties:
+      generic_tags:
+        description: Array of generic tags related to the uploaded image (grouped in lists by common concepts)
+        type: array
+        items:
+          type: array
+          items:
+            type: string
   
   RGBA:
     type: object
@@ -800,21 +1463,23 @@ definitions:
         maximum: 1
         
   ColorInfoRGBA:
-    type: object
-    properties:
-      pixelFraction:
-        description: The fraction of pixels the color occupies in the image. Value in range [0, 1]
-        type: number
-        minimum: 0
-        maximum: 1
-      confidence:
-        description: Image-specific score for this color. Value in range [0, 1].
-        type: number
-        minimum: 0
-        maximum: 1
-      rgba:
-        description: RGBA value for this color
-        $ref: '#/definitions/RGBA'
+    type: array
+    items:
+      type: object
+      properties:
+        pixelFraction:
+          description: The fraction of pixels the color occupies in the image. Value in range [0, 1]
+          type: number
+          minimum: 0
+          maximum: 1
+        confidence:
+          description: Image-specific score for this color. Value in range [0, 1].
+          type: number
+          minimum: 0
+          maximum: 1
+        color:
+          description: RGBA value for this color
+          $ref: '#/definitions/RGBA'
   
   GraphicalData:
     type: object
@@ -847,7 +1512,48 @@ definitions:
       colorInfoRGBA:
         description: Color Info with rgba values and px fraction
         $ref: '#/definitions/ColorInfoRGBA'
-      
+        
+  AzureGraphicalData:
+    type: object
+    properties:
+      dominantColorForeground:
+        description: The dominant color in the foreground
+        type: string
+      dominantColorBackground:
+        description: The dominant color in the background
+        type: string
+      dominantColors:
+        description: The dominant colors for the image
+        type: array
+        items: 
+          type: string
+      accentColor:
+        description: Accent color detected for the current image
+        type: string
+      isBWImg:
+        description: True if the image is in black and white
+        type: boolean
+      clipArtType:
+        description: Integer value between 0 and 3 in order to define how much this image is similar to a clipart
+        type: integer
+        minimum: 0
+        maximum: 3
+      lineDrawingType:
+        description: True if the image content is detected as drawn by a human
+        type: boolean
+        
+  GCloudGraphicalData:
+    type: object
+    properties:
+      colorInfoRGBA:
+        description: Color Info with rgba values and px fraction
+        $ref: '#/definitions/ColorInfoRGBA'
+  
+  ConfidenceLabel:
+    type: string
+    description: Confidence value expressed as the likelihood label offered by Google Cloud Vision
+    enum: [ 'UNKNOWN', 'VERY_UNLIKELY', 'UNLIKELY, POSSIBLE', 'LIKELY', 'VERY_LIKELY' ]
+          
   SafetyProperty:
     type: object
     properties:
@@ -859,15 +1565,26 @@ definitions:
         type: number
         minimum: 0
         maximum: 1
-      label:
+      confidenceLabel:
+        $ref: '#/definitions/ConfidenceLabel'
+        
+  AzureSafetyProperty:
+    type: object
+    properties:
+      present:
+        description: True if the content of the image confirm the presence of this property (property 'racy' and present=True, it means that the content has a highly probability of been racist)
+        type: boolean
+      confidence:
         description: Confidence value expressed as a value between 0 and 1 for this safety property
         type: number
         minimum: 0
-        maximum: 1  
+        maximum: 1
+        
+  GCloudSafetyProperty:
+    type: object
+    properties:
       confidenceLabel:
-        description: Confidence value expressed as the likelihood label offered by Google Cloud Vision
-        type: string
-        enum: [ 'UNKNOWN', 'VERY_UNLIKELY', 'UNLIKELY, POSSIBLE', 'LIKELY', 'VERY_LIKELY' ]
+        $ref: '#/definitions/ConfidenceLabel'
   
   SafetyAnnotation:
     type: object
@@ -882,6 +1599,28 @@ definitions:
         $ref: '#/definitions/SafetyProperty'
       spoof:
         $ref: '#/definitions/SafetyProperty'
+        
+  AzureSafetyAnnotation:
+    type: object
+    properties:
+      racy:
+        $ref: '#/definitions/AzureSafetyProperty'
+      adult:
+        $ref: '#/definitions/AzureSafetyProperty'
+        
+  GCloudSafetyAnnotation:
+    type: object
+    properties:
+      racy:
+        $ref: '#/definitions/GCloudSafetyProperty'
+      adult:
+        $ref: '#/definitions/GCloudSafetyProperty'
+      violence:
+        $ref: '#/definitions/GCloudSafetyProperty'
+      medical:
+        $ref: '#/definitions/GCloudSafetyProperty'
+      spoof:
+        $ref: '#/definitions/GCloudSafetyProperty'
   
   Metadata:
     type: object
@@ -921,7 +1660,9 @@ definitions:
       faceRectangle:
         $ref: '#/definitions/BoundingBox'
       landmarks:
-        $ref: '#/definitions/FaceLandmarksAnnotation'
+        type: array
+        items:
+          $ref: '#/definitions/FaceLandmarksAnnotation'
       similarFaces:
         type: array
         items:
@@ -968,6 +1709,114 @@ definitions:
         $ref: '#/definitions/Blur'
       exposure:
         $ref: '#/definitions/Exposure'
+        
+  AzureFace:
+    type: object
+    properties:
+      faceId:
+        description: faceId randomly generated by Azure Face (will expire in 24 hours)
+        type: string
+      gender:
+        description: Recognized gender 
+        type: string
+        enum: ['male', 'female']
+      age:
+        description: Recognized age value
+        type: integer
+      smile:
+        description: Smile intensity, a number between [0,1]
+        type: number
+        minimum: 0
+        maximum: 1
+      glasses:
+        description: Glasses type
+        type: string
+        enum: ['NoGlasses', 'ReadingGlasses', 'Sunglasses', 'SwimmingGoggles']
+      faceRectangle:
+        $ref: '#/definitions/BoundingBox'
+      landmarks:
+        type: array
+        items:
+          $ref: '#/definitions/FaceLandmarksAnnotation'
+      similarFaces:
+        type: array
+        items:
+          $ref: '#/definitions/PersistedFace'
+      celebrity:
+        description: Tag present if it is the face of a recognized celebrity
+        $ref: '#/definitions/TagNoBound'
+      facialHair:
+        $ref: '#/definitions/FacialHair'
+      hair:
+        $ref: '#/definitions/Hair'
+      headPose:
+        $ref: '#/definitions/HeadPose'
+      emotions:
+        type: object
+        properties:
+          anger:
+            $ref: '#/definitions/AzureEmotion'
+          contempt:
+            $ref: '#/definitions/AzureEmotion'
+          disgust:
+            $ref: '#/definitions/AzureEmotion'
+          fear:
+            $ref: '#/definitions/AzureEmotion'
+          happiness:
+            $ref: '#/definitions/AzureEmotion'
+          neutral:
+            $ref: '#/definitions/AzureEmotion'
+          sadness:
+            $ref: '#/definitions/AzureEmotion'
+          surprise:
+            $ref: '#/definitions/AzureEmotion'
+      makeup:
+        $ref: '#/definitions/Makeup'
+      occlusion:
+        $ref: '#/definitions/Occlusion'
+      accessories:
+        type: array
+        items:
+          $ref: '#/definitions/Accessory'
+      noise:
+        $ref: '#/definitions/Noise'
+      blur:
+        $ref: '#/definitions/AzureBlur'
+      exposure:
+        $ref: '#/definitions/AzureExposure'
+  
+  GCloudFace:
+    type: object
+    properties:
+      faceRectangle:
+        $ref: '#/definitions/BoundingBox'
+      landmarks:
+        type: array
+        items:
+          $ref: '#/definitions/FaceLandmarksAnnotation'
+      headPose:
+        $ref: '#/definitions/HeadPose'
+      emotions:
+        type: object
+        properties:
+          anger:
+            $ref: '#/definitions/GCloudEmotion'
+          happiness:
+            $ref: '#/definitions/GCloudEmotion'
+          sadness:
+            $ref: '#/definitions/GCloudEmotion'
+          surprise:
+            $ref: '#/definitions/GCloudEmotion'
+      blur:
+        type: object
+        properties:
+          blurredLikelihood:
+            $ref: '#/definitions/ConfidenceLabel'
+      exposure:
+        type: object
+        properties:
+          underExposedLikelihood:
+            $ref: '#/definitions/ConfidenceLabel'
       
   ImageAnnotation:
     type: object
@@ -989,7 +1838,7 @@ definitions:
       tags:
         type: array
         items:
-          $ref: '#/definitions/Tag'
+          $ref: '#/definitions/TagNoBound'
       description:
         $ref: '#/definitions/Description'
       graphicalData:
@@ -1000,3 +1849,61 @@ definitions:
           $ref: '#/definitions/Face'
       safetyAnnotations:
         $ref: '#/definitions/SafetyAnnotation'
+        
+  AzureImageAnnotation:
+    type: object
+    properties:
+      metadata:
+        $ref: '#/definitions/Metadata'
+      landmarks:
+        type: array
+        items:
+          $ref: '#/definitions/TagNoBound'
+      objects:
+        type: array
+        items:
+          $ref: '#/definitions/Tag'
+      tags:
+        type: array
+        items:
+          $ref: '#/definitions/TagNoBound'
+      description:
+        $ref: '#/definitions/Description'
+      graphicalData:
+        $ref: '#/definitions/AzureGraphicalData'
+      faces:
+        type: array
+        items:
+          $ref: '#/definitions/AzureFace'
+      safetyAnnotations:
+        $ref: '#/definitions/AzureSafetyAnnotation'
+        
+  GCloudImageAnnotation:
+    type: object
+    properties:
+      texts:
+        type: array
+        items:
+          $ref: '#/definitions/Text'
+      landmarks:
+        type: array
+        items:
+          $ref: '#/definitions/Landmark'
+      objects:
+        type: array
+        items:
+          $ref: '#/definitions/Tag'
+      tags:
+        type: array
+        items:
+          $ref: '#/definitions/TagNoBound'
+      description:
+        $ref: '#/definitions/GCloudDescription'
+      graphicalData:
+        $ref: '#/definitions/GCloudGraphicalData'
+      faces:
+        type: array
+        items:
+          $ref: '#/definitions/GCloudFace'
+      safetyAnnotations:
+        $ref: '#/definitions/GCloudSafetyAnnotation'
