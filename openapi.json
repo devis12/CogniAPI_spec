@@ -63,7 +63,7 @@
           "Analyse"
         ],
         "summary": "Complete image analysis",
-        "description": "This call will probably be the most useful since it combines in a \nsingle response all the valuable information extracted from the cognitive services mentioned above and showing them in a unified schema\n",
+        "description": "This call will probably be the most useful since it combines in a single response all the valuable information extracted from the cognitive services mentioned above (Google Cloud Vision, Azure Computer Vision and Azure Face) and showing them in a unified schema. If you are logged (specifying your username) you can also have the recognition services integrated in this answer: for every face you'll see the ones that are most similar to it, based on the previous faces you stored into the system with [/azure/faces/{user}](#/AzureFaceMg/AzureAddFace)\n",
         "operationId": "analyse",
         "parameters": [
           {
@@ -113,7 +113,7 @@
           "Analyse"
         ],
         "summary": "Analysis of detected faces in the image",
-        "description": "This call will provide a full face detection and recogntion of the image (the second one will be performed just if the user is logged)\n",
+        "description": "This call will provide a full face detection and recognition of the image (the second one will be performed just if the user is logged)\n",
         "operationId": "analyseFace",
         "parameters": [
           {
@@ -121,7 +121,7 @@
             "name": "user",
             "type": "string",
             "required": false,
-            "description": "Optional user token which can be used to identify the logged user and to provide additional features (use /auth in order to get one)"
+            "description": "Optional user token which can be used to identify the logged user and to provide additional features (face recognition)"
           },
           {
             "in": "query",
@@ -156,7 +156,7 @@
           "Analyse"
         ],
         "summary": "Image tag analysis",
-        "description": "This call provides just tag and labels, respect to what it's possible to obtain with a full and complete /analyse call\n",
+        "description": "This call provides just tag and labels, respect to what it's possible to obtain with a full and complete [/analyse](#/Analyse/analyse) call\n",
         "operationId": "analyseTag",
         "parameters": [
           {
@@ -202,7 +202,7 @@
           "Analyse"
         ],
         "summary": "Image objects detection",
-        "description": "This call provides just detected objects, respect to what it's possible to obtain with a full and complete /analyse call\n",
+        "description": "This call provides just detected objects, respect to what it's possible to obtain with a full and complete [/analyse](#/Analyse/analyse) call\n",
         "operationId": "analyseObject",
         "parameters": [
           {
@@ -281,7 +281,7 @@
           "Analyse"
         ],
         "summary": "Text detection of supplied image",
-        "description": "This call will return the text which has been detected inside the image\n",
+        "description": "This call will return the texts which have been detected inside the image\n",
         "operationId": "analyseText",
         "parameters": [
           {
@@ -317,8 +317,8 @@
           "Analyse"
         ],
         "summary": "Landmark detection of supplied image",
-        "description": "This call will return the text which has been detected inside the image\n",
-        "operationId": "analyseLandmarks",
+        "description": "This call will return the landmarks (locations of interest) which have been detected inside the image\n",
+        "operationId": "analyseLandmark",
         "parameters": [
           {
             "in": "query",
@@ -353,7 +353,7 @@
           "Analyse"
         ],
         "summary": "Safety tags annotation of supplied image",
-        "description": "This call will return the text which has been detected inside the image\n",
+        "description": "This call will return the safety properties (racy likelihood, level of violence detected in the image and so on) related to the linked image. This aims to evaluate the likelihood of inappropriate content in the image\n",
         "operationId": "analyseSafety",
         "parameters": [
           {
@@ -419,8 +419,8 @@
           "GCloud"
         ],
         "summary": "Complete image analysis",
-        "description": "This call will provide in a single response all the valuable information extracted from the cognitive services using just gcloud vision and showing them in a unified schema (no need to authenticate yourself because google cloud vision doesn't supply any face recognition service)\n",
-        "operationId": "GCloudAnalyse",
+        "description": "This call will provide in a single response all the valuable information extracted from the cognitive services using just Google Cloud Vision and showing them in a unified schema (no need to authenticate yourself because Google Cloud Vision doesn't supply any face recognition service)\n",
+        "operationId": "gcloudAnalyse",
         "parameters": [
           {
             "in": "query",
@@ -428,6 +428,16 @@
             "type": "string",
             "required": true,
             "description": "Link of the image which has to be analysed"
+          },
+          {
+            "in": "query",
+            "name": "minscore",
+            "type": "number",
+            "required": false,
+            "default": 0,
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Optional score value. You can set the minimum threshold in order to filter out tags and objects with low confidence values. (If you go off the range [0,1] this value will be set to default automatically)"
           }
         ],
         "produces": [
@@ -452,8 +462,8 @@
           "GCloud"
         ],
         "summary": "Face detected in the image",
-        "description": "This call will provide a full face detection of the image with the data which google cloud provide\n",
-        "operationId": "GCloudAnalyseFace",
+        "description": "This call will provide a full face detection of the image with the data which Google Cloud Vision provides (no need to authenticate yourself because Google Cloud Vision doesn't supply any face recognition service)\n",
+        "operationId": "gcloudAnalyseFace",
         "parameters": [
           {
             "in": "query",
@@ -488,8 +498,8 @@
           "GCloud"
         ],
         "summary": "Image tag analysis",
-        "description": "This call provides just tag and labels, respect to what it's possible to obtain with a full and complete /analyse call\n",
-        "operationId": "GCloudAnalyseTag",
+        "description": "This call provides just tag and labels (returned by Google Cloud Vision), respect to what it's possible to obtain with a full and complete [/gcloud/analyse](#/GCloud/gcloudAnalyse) call\n",
+        "operationId": "gcloudAnalyseTag",
         "parameters": [
           {
             "in": "query",
@@ -497,6 +507,16 @@
             "type": "string",
             "required": true,
             "description": "Link of the image which has to be analysed"
+          },
+          {
+            "in": "query",
+            "name": "minscore",
+            "type": "number",
+            "required": false,
+            "default": 0,
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Optional score value. You can set the minimum threshold in order to filter out tags with low confidence values. (If you go off the range [0,1] this value will be set to default automatically)"
           }
         ],
         "produces": [
@@ -524,8 +544,8 @@
           "GCloud"
         ],
         "summary": "Image objects detection",
-        "description": "This call provides just detected objects, respect to what it's possible to obtain with a full and complete /analyse call\n",
-        "operationId": "GCloudAnalyseObject",
+        "description": "This call provides just detected objects (provided by Google Cloud Vision), respect to what it's possible to obtain with a full and complete [/gcloud/analyse](#/GCloud/gcloudAnalyse) call\n",
+        "operationId": "gcloudAnalyseObject",
         "parameters": [
           {
             "in": "query",
@@ -533,6 +553,16 @@
             "type": "string",
             "required": true,
             "description": "Link of the image which has to be analysed"
+          },
+          {
+            "in": "query",
+            "name": "minscore",
+            "type": "number",
+            "required": false,
+            "default": 0,
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Optional score value. You can set the minimum threshold in order to filter out objects with low confidence values. (If you go off the range [0,1] this value will be set to default automatically)"
           }
         ],
         "produces": [
@@ -560,8 +590,8 @@
           "GCloud"
         ],
         "summary": "Description of image content",
-        "description": "This call provides a brief description of the image content: there will be a bunch of generic tags, grouped by concept\n",
-        "operationId": "GCloudAnalyseDescription",
+        "description": "This call provides a brief description of the image content: there will be a bunch of generic tags (supplied by Google Cloud Vision), grouped by concept \n",
+        "operationId": "gcloudAnalyseDescription",
         "parameters": [
           {
             "in": "query",
@@ -593,8 +623,8 @@
           "GCloud"
         ],
         "summary": "Text detection of supplied image",
-        "description": "This call will return the text which has been detected inside the image\n",
-        "operationId": "GCloudAnalyseText",
+        "description": "This call will return the different texts which have been detected inside the image by Google Cloud Vision\n",
+        "operationId": "gcloudAnalyseText",
         "parameters": [
           {
             "in": "query",
@@ -629,8 +659,8 @@
           "GCloud"
         ],
         "summary": "Landmark detection of supplied image",
-        "description": "This call will return the text which has been detected inside the image\n",
-        "operationId": "GCloudAnalyseLandmarks",
+        "description": "This call will return the landmarks (locations of interest) which have been detected inside the image by Google Cloud Vision\n",
+        "operationId": "gcloudAnalyseLandmark",
         "parameters": [
           {
             "in": "query",
@@ -664,9 +694,9 @@
         "tags": [
           "GCloud"
         ],
-        "summary": "Safety tags annotation of supplied image",
-        "description": "This call will return the text which has been detected inside the image\n",
-        "operationId": "GCloudAnalyseSafety",
+        "summary": "Safety tags annotation of supplied image provided just by google cloud vision",
+        "description": "This call will return some safey properties (racy likelihood, violence inside the image and so on) with values related to the linked image. This aims to evaluate the likelihood of inappropriate content in the image\n",
+        "operationId": "gcloudAnalyseSafety",
         "parameters": [
           {
             "in": "query",
@@ -698,8 +728,8 @@
           "GCloud"
         ],
         "summary": "Color analysis of image content",
-        "description": "This call provides a complete analysis of the image colors \n",
-        "operationId": "GCloudAnalyseColor",
+        "description": "This call provides an analysis of the image colors using Google Cloud Vision data\n",
+        "operationId": "gcloudAnalyseColor",
         "parameters": [
           {
             "in": "query",
@@ -732,7 +762,7 @@
         ],
         "summary": "Complete image analysis",
         "description": "This call will combine in a single response all the valuable information extracted from Azure Computer Vision and Azure Face apis showing them in a unified schema (in respect to the standard one)\n",
-        "operationId": "AzureAnalyse",
+        "operationId": "azureAnalyse",
         "parameters": [
           {
             "in": "query",
@@ -747,6 +777,16 @@
             "type": "string",
             "required": true,
             "description": "Link of the image which has to be analysed"
+          },
+          {
+            "in": "query",
+            "name": "minscore",
+            "type": "number",
+            "required": false,
+            "default": 0,
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Optional score value. You can set the minimum threshold in order to filter out tags and objects with low confidence values. (If you go off the range [0,1] this value will be set to default automatically)"
           }
         ],
         "produces": [
@@ -771,8 +811,8 @@
           "Azure"
         ],
         "summary": "Face detected in the image with recognition",
-        "description": "This call will provide a full face detection of the image with the data which google cloud provide\n",
-        "operationId": "AzureAnalyseFace",
+        "description": "This call will provide a full face detection of the image with the data which Azure Computer Vision and Azure Face provide\n",
+        "operationId": "azureAnalyseFace",
         "parameters": [
           {
             "in": "query",
@@ -814,8 +854,8 @@
           "Azure"
         ],
         "summary": "Image tag analysis",
-        "description": "This call provides just tag and labels, respect to what it's possible to obtain with a full and complete /analyse call\n",
-        "operationId": "AzureAnalyseTag",
+        "description": "This call provides just tag and labels (supplied by Azure Computer Vision), respect to what it's possible to obtain with a full and complete [/azure/analyse](#/Azure/azureAnalyse) call\n",
+        "operationId": "azureAnalyseTag",
         "parameters": [
           {
             "in": "query",
@@ -823,6 +863,16 @@
             "type": "string",
             "required": true,
             "description": "Link of the image which has to be analysed"
+          },
+          {
+            "in": "query",
+            "name": "minscore",
+            "type": "number",
+            "required": false,
+            "default": 0,
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Optional score value. You can set the minimum threshold in order to filter out tags with low confidence values. (If you go off the range [0,1] this value will be set to default automatically)"
           }
         ],
         "produces": [
@@ -850,8 +900,8 @@
           "Azure"
         ],
         "summary": "Image objects detection",
-        "description": "This call provides just detected objects, respect to what it's possible to obtain with a full and complete /analyse call\n",
-        "operationId": "AzureAnalyseObject",
+        "description": "This call provides just detected objects (supplied by Azure Computer Vision), respect to what it's possible to obtain with a full and complete [/azure/analyse](#/Azure/AzureAnalyse) call\n",
+        "operationId": "azureAnalyseObject",
         "parameters": [
           {
             "in": "query",
@@ -859,6 +909,16 @@
             "type": "string",
             "required": true,
             "description": "Link of the image which has to be analysed"
+          },
+          {
+            "in": "query",
+            "name": "minscore",
+            "type": "number",
+            "required": false,
+            "default": 0,
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Optional score value. You can set the minimum threshold in order to filter out objects with low confidence values. (If you go off the range [0,1] this value will be set to default automatically)"
           }
         ],
         "produces": [
@@ -886,8 +946,8 @@
           "Azure"
         ],
         "summary": "Description of image content",
-        "description": "This call provides a brief description of the image content: there will be a bunch of generic tags, grouped by concept\n",
-        "operationId": "AzureAnalyseDescription",
+        "description": "This call provides a brief description of the image content: there will be a bunch of generic tags, grouped by concept, some captions and a classification based on a 86 category taxonomy defined here https://docs.microsoft.com/en-us/azure/cognitive-services/Computer-vision/category-taxonomy\n",
+        "operationId": "azureAnalyseDescription",
         "parameters": [
           {
             "in": "query",
@@ -919,8 +979,8 @@
           "Azure"
         ],
         "summary": "Landmark detection of supplied image",
-        "description": "This call will return the text which has been detected inside the image\n",
-        "operationId": "AzureAnalyseLandmarks",
+        "description": "This call will return the landmarks (locations of interest) which have been detected inside the image by Azure Computer Vision\n",
+        "operationId": "azureAnalyseLandmark",
         "parameters": [
           {
             "in": "query",
@@ -955,8 +1015,8 @@
           "Azure"
         ],
         "summary": "Safety tags annotation of supplied image",
-        "description": "This call will return the text which has been detected inside the image\n",
-        "operationId": "AzureAnalyseSafety",
+        "description": "This call will return some safey properties (racy likelihood, violence inside the image and so on) with values related to the linked image (data are supplied by Azure Computer Vision). This aims to evaluate the likelihood of inappropriate content in the image\n",
+        "operationId": "azureAnalyseSafety",
         "parameters": [
           {
             "in": "query",
@@ -988,8 +1048,8 @@
           "Azure"
         ],
         "summary": "Color analysis of image content",
-        "description": "This call provides a complete analysis of the image colors \n",
-        "operationId": "AzureAnalyseColor",
+        "description": "This call provides a complete analysis of the image colors with data supplied by Azure Computer Vision\n",
+        "operationId": "azureAnalyseColor",
         "parameters": [
           {
             "in": "query",
@@ -1020,9 +1080,9 @@
         "tags": [
           "AzureFaceMg"
         ],
-        "summary": "Add face to your face group in order to persist some user data related to it and recognize it when in future image submissions there will be a similar one",
-        "description": "This call provides a way for you to store some user data related to a face, so they will pop out again when a face similar to the one you're storing will be detected (mandatory to perform face training in the between order to achieve this final result)\n",
-        "operationId": "AzureAddFace",
+        "summary": "Add a persisted face to your face group",
+        "description": "This call provides a way for you to store some user data related to a face, so they will pop out again when a face similar to the one you're storing will be detected (mandatory to perform face training [azure/faces/train/{user}](#/AzureFaceMg/azureTrainFace) in the between, so it's possible to achieve this final result)\n",
+        "operationId": "azureAddFace",
         "consumes": [
           "application/json",
           "application/x-www-form-urlencoded"
@@ -1033,7 +1093,7 @@
             "name": "user",
             "type": "string",
             "required": true,
-            "description": "User token which can be used to identify the logged user, so to perform operations on the face group related to him"
+            "description": "User token which can be used to identify the logged user in order to perform operations on the face group related to him"
           },
           {
             "in": "formData",
@@ -1054,7 +1114,7 @@
             "name": "userData",
             "type": "string",
             "required": true,
-            "description": "User data you want to associate to this face"
+            "description": "User data you want to associate to this face (e.g. name and surname)"
           }
         ],
         "produces": [
@@ -1073,9 +1133,9 @@
         "tags": [
           "AzureFaceMg"
         ],
-        "summary": "Update face to your face group in order to persist new user data related to it and recognize it when in future image submissions there will be a similar one",
-        "description": "This call provides a way for you to update the stored user data related to a face, so they will pop out again when a face similar to the one you're storing will be detected (mandatory to perform face training in the between order to achieve this final result)\n",
-        "operationId": "AzurePatchFace",
+        "summary": "Update user data related to a persisted face",
+        "description": "This call provides a way for you to update the stored user data related to a face, so they will pop out again when a face similar to the one you're storing will be detected (mandatory to perform face training [azure/faces/train/{user}](#/AzureFaceMg/azureTrainFace) in the between, so it's possible to achieve this final result)\n",
+        "operationId": "azurePatchFace",
         "consumes": [
           "application/json",
           "application/x-www-form-urlencoded"
@@ -1086,7 +1146,7 @@
             "name": "user",
             "type": "string",
             "required": true,
-            "description": "User token which can be used to identify the logged user, so to perform operations on the face group related to him"
+            "description": "User token which can be used to identify the logged user in order to perform operations on the face group related to him"
           },
           {
             "in": "formData",
@@ -1100,7 +1160,7 @@
             "name": "userData",
             "type": "string",
             "required": true,
-            "description": "User data you want to associate to this face"
+            "description": "User data you want to associate to this face (e.g. name and surname)"
           }
         ],
         "produces": [
@@ -1119,9 +1179,9 @@
         "tags": [
           "AzureFaceMg"
         ],
-        "summary": "Update face to your face group in order to persist new user data related to it and recognize it when in future image submissions there will be a similar one",
-        "description": "This call provides a way for you to delete the stored user data related to a face, so they won't pop out again when a face similar to the one you're storing will be detected (mandatory to perform face training in the between order to achieve this final result)\n",
-        "operationId": "AzureDeleteFace",
+        "summary": "Delete persisted face",
+        "description": "This call provides a way for you to delete the stored user data related to a face, so they won't pop out again when a face similar to the one you're storing will be detected (mandatory to perform face training [azure/faces/train/{user}](#/AzureFaceMg/azureTrainFace) in the between, so it's possible to achieve this final result)\n",
+        "operationId": "azureDeleteFace",
         "consumes": [
           "application/json",
           "application/x-www-form-urlencoded"
@@ -1132,14 +1192,14 @@
             "name": "user",
             "type": "string",
             "required": true,
-            "description": "User token which can be used to identify the logged user, so to perform operations on the face group related to him"
+            "description": "User token which can be used to identify the logged user in order to perform operations on the face group related to him"
           },
           {
             "in": "formData",
             "name": "persistedFaceId",
             "type": "string",
             "required": true,
-            "description": "Id of the persisted face (you can have it in the similarFace arrat resulted from previous analysis)"
+            "description": "Id of the persisted face (you can have it in the similarFace array resulted from a previous analysis)"
           }
         ],
         "produces": [
@@ -1162,14 +1222,14 @@
         ],
         "summary": "Train your face group (mandatory after adding, patching or deleting face operations)",
         "description": "This call provides a way for you to start training your cognitive service, in order to have a good face recognition system \n",
-        "operationId": "AzureTrainFace",
+        "operationId": "azureTrainFace",
         "parameters": [
           {
             "in": "path",
             "name": "user",
             "type": "string",
             "required": true,
-            "description": "User token which can be used to identify the logged user, so to perform operations on the face group related to him"
+            "description": "User token which can be used to identify the logged user in order to perform operations on the face group related to him"
           }
         ],
         "produces": [
