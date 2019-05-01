@@ -69,8 +69,7 @@ paths:
       summary: Complete image analysis 
       
       description: | 
-        This call will probably be the most useful since it combines in a 
-        single response all the valuable information extracted from the cognitive services mentioned above and showing them in a unified schema
+        This call will probably be the most useful since it combines in a single response all the valuable information extracted from the cognitive services mentioned above (Google Cloud Vision, Azure Computer Vision and Azure Face) and showing them in a unified schema. If you are logged (specifying your username) you can also have the recognition services integrated in this answer: for every face you'll see the ones that are most similar to it, based on the previous faces you stored into the system with [/azure/faces/{user}](#/AzureFaceMg/AzureAddFace)
       
       operationId: analyse
       
@@ -113,7 +112,7 @@ paths:
       summary: Analysis of detected faces in the image
       
       description: | 
-        This call will provide a full face detection and recogntion of the image (the second one will be performed just if the user is logged)
+        This call will provide a full face detection and recognition of the image (the second one will be performed just if the user is logged)
       
       operationId: analyseFace
       
@@ -122,7 +121,7 @@ paths:
         name: user
         type: string
         required: false
-        description: Optional user token which can be used to identify the logged user and to provide additional features (use /auth in order to get one)
+        description: Optional user token which can be used to identify the logged user and to provide additional features (face recognition)
       - in: query
         name: url
         type: string
@@ -150,7 +149,7 @@ paths:
       summary: Image tag analysis 
       
       description: | 
-        This call provides just tag and labels, respect to what it's possible to obtain with a full and complete /analyse call
+        This call provides just tag and labels, respect to what it's possible to obtain with a full and complete [/analyse](#/Analyse/analyse) call
       
       operationId: analyseTag
       
@@ -190,7 +189,7 @@ paths:
       summary: Image objects detection 
       
       description: | 
-        This call provides just detected objects, respect to what it's possible to obtain with a full and complete /analyse call
+        This call provides just detected objects, respect to what it's possible to obtain with a full and complete [/analyse](#/Analyse/analyse) call
       
       operationId: analyseObject
       
@@ -260,7 +259,7 @@ paths:
       summary: Text detection of supplied image
       
       description: | 
-        This call will return the text which has been detected inside the image
+        This call will return the texts which have been detected inside the image
       
       operationId: analyseText
       
@@ -292,9 +291,9 @@ paths:
       summary: Landmark detection of supplied image
       
       description: | 
-        This call will return the text which has been detected inside the image
+        This call will return the landmarks (locations of interest) which have been detected inside the image
       
-      operationId: analyseLandmarks
+      operationId: analyseLandmark
       
       parameters:
       - in: query
@@ -324,7 +323,7 @@ paths:
       summary: Safety tags annotation of supplied image
       
       description: | 
-        This call will return the text which has been detected inside the image
+        This call will return the safety properties (racy likelihood, level of violence detected in the image and so on) related to the linked image. This aims to evaluate the likelihood of inappropriate content in the image
       
       operationId: analyseSafety
       
@@ -384,9 +383,9 @@ paths:
       summary: Complete image analysis 
       
       description: | 
-        This call will provide in a single response all the valuable information extracted from the cognitive services using just gcloud vision and showing them in a unified schema (no need to authenticate yourself because google cloud vision doesn't supply any face recognition service)
+        This call will provide in a single response all the valuable information extracted from the cognitive services using just Google Cloud Vision and showing them in a unified schema (no need to authenticate yourself because Google Cloud Vision doesn't supply any face recognition service)
       
-      operationId: GCloudAnalyse
+      operationId: gcloudAnalyse
       
       parameters:
       - in: query
@@ -394,6 +393,14 @@ paths:
         type: string
         required: true
         description: Link of the image which has to be analysed
+      - in: query
+        name: minscore
+        type: number
+        required: false
+        default: 0
+        minimum: 0
+        maximum: 1
+        description: Optional score value. You can set the minimum threshold in order to filter out tags and objects with low confidence values. (If you go off the range [0,1] this value will be set to default automatically)
       
       # overwriting default global produces
       produces:
@@ -411,12 +418,12 @@ paths:
       tags:
         - GCloud
       
-      summary: Face detected in the image 
+      summary: Face detected in the image
       
       description: | 
-        This call will provide a full face detection of the image with the data which google cloud provide
+        This call will provide a full face detection of the image with the data which Google Cloud Vision provides (no need to authenticate yourself because Google Cloud Vision doesn't supply any face recognition service)
       
-      operationId: GCloudAnalyseFace
+      operationId: gcloudAnalyseFace
       
       parameters:
       - in: query
@@ -443,12 +450,12 @@ paths:
       tags:
         - GCloud
       
-      summary: Image tag analysis 
+      summary: Image tag analysis
       
       description: | 
-        This call provides just tag and labels, respect to what it's possible to obtain with a full and complete /analyse call
+        This call provides just tag and labels (returned by Google Cloud Vision), respect to what it's possible to obtain with a full and complete [/gcloud/analyse](#/GCloud/gcloudAnalyse) call
       
-      operationId: GCloudAnalyseTag
+      operationId: gcloudAnalyseTag
       
       parameters:
       - in: query
@@ -456,7 +463,15 @@ paths:
         type: string
         required: true
         description: Link of the image which has to be analysed
-      
+      - in: query
+        name: minscore
+        type: number
+        required: false
+        default: 0
+        minimum: 0
+        maximum: 1
+        description: Optional score value. You can set the minimum threshold in order to filter out tags with low confidence values. (If you go off the range [0,1] this value will be set to default automatically)
+        
       # overwriting default global produces
       produces:
         - application/json
@@ -475,12 +490,12 @@ paths:
       tags:
         - GCloud
       
-      summary: Image objects detection 
+      summary: Image objects detection
       
       description: | 
-        This call provides just detected objects, respect to what it's possible to obtain with a full and complete /analyse call
+        This call provides just detected objects (provided by Google Cloud Vision), respect to what it's possible to obtain with a full and complete [/gcloud/analyse](#/GCloud/gcloudAnalyse) call
       
-      operationId: GCloudAnalyseObject
+      operationId: gcloudAnalyseObject
       
       parameters:
       - in: query
@@ -488,6 +503,14 @@ paths:
         type: string
         required: true
         description: Link of the image which has to be analysed
+      - in: query
+        name: minscore
+        type: number
+        required: false
+        default: 0
+        minimum: 0
+        maximum: 1
+        description: Optional score value. You can set the minimum threshold in order to filter out objects with low confidence values. (If you go off the range [0,1] this value will be set to default automatically)
       
       # overwriting default global produces
       produces:
@@ -507,12 +530,11 @@ paths:
       tags:
         - GCloud
       
-      summary: Description of image content
-      
+      summary: Description of image content 
       description: | 
-        This call provides a brief description of the image content: there will be a bunch of generic tags, grouped by concept
+        This call provides a brief description of the image content: there will be a bunch of generic tags (supplied by Google Cloud Vision), grouped by concept 
       
-      operationId: GCloudAnalyseDescription
+      operationId: gcloudAnalyseDescription
       
       parameters:
       - in: query
@@ -537,12 +559,12 @@ paths:
       tags:
         - GCloud
       
-      summary: Text detection of supplied image
+      summary: Text detection of supplied image 
       
       description: | 
-        This call will return the text which has been detected inside the image
+        This call will return the different texts which have been detected inside the image by Google Cloud Vision
       
-      operationId: GCloudAnalyseText
+      operationId: gcloudAnalyseText
       
       parameters:
       - in: query
@@ -569,12 +591,12 @@ paths:
       tags:
         - GCloud
       
-      summary: Landmark detection of supplied image
+      summary: Landmark detection of supplied image 
       
       description: | 
-        This call will return the text which has been detected inside the image
+        This call will return the landmarks (locations of interest) which have been detected inside the image by Google Cloud Vision
       
-      operationId: GCloudAnalyseLandmarks
+      operationId: gcloudAnalyseLandmark
       
       parameters:
       - in: query
@@ -601,12 +623,12 @@ paths:
       tags:
         - GCloud
       
-      summary: Safety tags annotation of supplied image
+      summary: Safety tags annotation of supplied image provided just by google cloud vision
       
       description: | 
-        This call will return the text which has been detected inside the image
+        This call will return some safey properties (racy likelihood, violence inside the image and so on) with values related to the linked image. This aims to evaluate the likelihood of inappropriate content in the image
       
-      operationId: GCloudAnalyseSafety
+      operationId: gcloudAnalyseSafety
       
       parameters:
       - in: query
@@ -631,12 +653,11 @@ paths:
       tags:
         - GCloud
       
-      summary: Color analysis of image content
-      
+      summary: Color analysis of image content 
       description: | 
-        This call provides a complete analysis of the image colors 
+        This call provides an analysis of the image colors using Google Cloud Vision data
       
-      operationId: GCloudAnalyseColor
+      operationId: gcloudAnalyseColor
       
       parameters:
       - in: query
@@ -666,7 +687,7 @@ paths:
       description: | 
         This call will combine in a single response all the valuable information extracted from Azure Computer Vision and Azure Face apis showing them in a unified schema (in respect to the standard one)
       
-      operationId: AzureAnalyse
+      operationId: azureAnalyse
       
       parameters:
       - in: query
@@ -674,11 +695,21 @@ paths:
         type: string
         required: false
         description: Optional user token which can be used to identify the logged user and to provide additional features (use /auth in order to get one)
+        
       - in: query
         name: url
         type: string
         required: true
         description: Link of the image which has to be analysed
+        
+      - in: query
+        name: minscore
+        type: number
+        required: false
+        default: 0
+        minimum: 0
+        maximum: 1
+        description: Optional score value. You can set the minimum threshold in order to filter out tags and objects with low confidence values. (If you go off the range [0,1] this value will be set to default automatically)
       
       # overwriting default global produces
       produces:
@@ -699,9 +730,9 @@ paths:
       summary: Face detected in the image with recognition
       
       description: | 
-        This call will provide a full face detection of the image with the data which google cloud provide
+        This call will provide a full face detection of the image with the data which Azure Computer Vision and Azure Face provide
       
-      operationId: AzureAnalyseFace
+      operationId: azureAnalyseFace
       
       parameters:
       - in: query
@@ -709,6 +740,7 @@ paths:
         type: string
         required: false
         description: Optional user token which can be used to identify the logged user and to provide additional features (use /auth in order to get one)
+        
       - in: query
         name: url
         type: string
@@ -736,9 +768,9 @@ paths:
       summary: Image tag analysis 
       
       description: | 
-        This call provides just tag and labels, respect to what it's possible to obtain with a full and complete /analyse call
+        This call provides just tag and labels (supplied by Azure Computer Vision), respect to what it's possible to obtain with a full and complete [/azure/analyse](#/Azure/azureAnalyse) call
       
-      operationId: AzureAnalyseTag
+      operationId: azureAnalyseTag
       
       parameters:
       - in: query
@@ -746,6 +778,16 @@ paths:
         type: string
         required: true
         description: Link of the image which has to be analysed
+        
+      - in: query
+        name: minscore
+        type: number
+        required: false
+        default: 0
+        minimum: 0
+        maximum: 1
+        description: Optional score value. You can set the minimum threshold in order to filter out tags with low confidence values. (If you go off the range [0,1] this value will be set to default automatically)
+        
       
       # overwriting default global produces
       produces:
@@ -768,9 +810,9 @@ paths:
       summary: Image objects detection 
       
       description: | 
-        This call provides just detected objects, respect to what it's possible to obtain with a full and complete /analyse call
+        This call provides just detected objects (supplied by Azure Computer Vision), respect to what it's possible to obtain with a full and complete [/azure/analyse](#/Azure/AzureAnalyse) call
       
-      operationId: AzureAnalyseObject
+      operationId: azureAnalyseObject
       
       parameters:
       - in: query
@@ -778,6 +820,15 @@ paths:
         type: string
         required: true
         description: Link of the image which has to be analysed
+        
+      - in: query
+        name: minscore
+        type: number
+        required: false
+        default: 0
+        minimum: 0
+        maximum: 1
+        description: Optional score value. You can set the minimum threshold in order to filter out objects with low confidence values. (If you go off the range [0,1] this value will be set to default automatically)
       
       # overwriting default global produces
       produces:
@@ -800,9 +851,9 @@ paths:
       summary: Description of image content
       
       description: | 
-        This call provides a brief description of the image content: there will be a bunch of generic tags, grouped by concept
+        This call provides a brief description of the image content: there will be a bunch of generic tags, grouped by concept, some captions and a classification based on a 86 category taxonomy defined here https://docs.microsoft.com/en-us/azure/cognitive-services/Computer-vision/category-taxonomy
       
-      operationId: AzureAnalyseDescription
+      operationId: azureAnalyseDescription
       
       parameters:
       - in: query
@@ -830,9 +881,9 @@ paths:
       summary: Landmark detection of supplied image
       
       description: | 
-        This call will return the text which has been detected inside the image
-      
-      operationId: AzureAnalyseLandmarks
+        This call will return the landmarks (locations of interest) which have been detected inside the image by Azure Computer Vision
+        
+      operationId: azureAnalyseLandmark
       
       parameters:
       - in: query
@@ -862,9 +913,9 @@ paths:
       summary: Safety tags annotation of supplied image
       
       description: | 
-        This call will return the text which has been detected inside the image
-      
-      operationId: AzureAnalyseSafety
+        This call will return some safey properties (racy likelihood, violence inside the image and so on) with values related to the linked image (data are supplied by Azure Computer Vision). This aims to evaluate the likelihood of inappropriate content in the image
+        
+      operationId: azureAnalyseSafety
       
       parameters:
       - in: query
@@ -892,9 +943,9 @@ paths:
       summary: Color analysis of image content
       
       description: | 
-        This call provides a complete analysis of the image colors 
+        This call provides a complete analysis of the image colors with data supplied by Azure Computer Vision
       
-      operationId: AzureAnalyseColor
+      operationId: azureAnalyseColor
       
       parameters:
       - in: query
@@ -919,12 +970,12 @@ paths:
       tags:
         - AzureFaceMg
       
-      summary: Add face to your face group in order to persist some user data related to it and recognize it when in future image submissions there will be a similar one
+      summary: Add a persisted face to your face group 
       
       description: | 
-        This call provides a way for you to store some user data related to a face, so they will pop out again when a face similar to the one you're storing will be detected (mandatory to perform face training in the between order to achieve this final result)
+        This call provides a way for you to store some user data related to a face, so they will pop out again when a face similar to the one you're storing will be detected (mandatory to perform face training [azure/faces/train/{user}](#/AzureFaceMg/azureTrainFace) in the between, so it's possible to achieve this final result)
       
-      operationId: AzureAddFace
+      operationId: azureAddFace
       
       consumes:
         - application/json
@@ -935,7 +986,7 @@ paths:
         name: user
         type: string
         required: true
-        description: User token which can be used to identify the logged user, so to perform operations on the face group related to him
+        description: User token which can be used to identify the logged user in order to perform operations on the face group related to him
         
       - in: formData
         name: imageUrl
@@ -953,7 +1004,7 @@ paths:
         name: userData
         type: string
         required: true
-        description: User data you want to associate to this face
+        description: User data you want to associate to this face (e.g. name and surname)
       
       # overwriting default global produces
       produces:
@@ -968,12 +1019,12 @@ paths:
       tags:
         - AzureFaceMg
       
-      summary: Update face to your face group in order to persist new user data related to it and recognize it when in future image submissions there will be a similar one
+      summary: Update user data related to a persisted face
       
       description: | 
-        This call provides a way for you to update the stored user data related to a face, so they will pop out again when a face similar to the one you're storing will be detected (mandatory to perform face training in the between order to achieve this final result)
+        This call provides a way for you to update the stored user data related to a face, so they will pop out again when a face similar to the one you're storing will be detected (mandatory to perform face training [azure/faces/train/{user}](#/AzureFaceMg/azureTrainFace) in the between, so it's possible to achieve this final result)
       
-      operationId: AzurePatchFace
+      operationId: azurePatchFace
       
       consumes:
         - application/json
@@ -984,7 +1035,7 @@ paths:
         name: user
         type: string
         required: true
-        description: User token which can be used to identify the logged user, so to perform operations on the face group related to him
+        description: User token which can be used to identify the logged user in order to perform operations on the face group related to him
         
       - in: formData
         name: persistedFaceId
@@ -996,7 +1047,7 @@ paths:
         name: userData
         type: string
         required: true
-        description: User data you want to associate to this face
+        description: User data you want to associate to this face (e.g. name and surname)
       
       # overwriting default global produces
       produces:
@@ -1011,12 +1062,12 @@ paths:
       tags:
         - AzureFaceMg
       
-      summary: Update face to your face group in order to persist new user data related to it and recognize it when in future image submissions there will be a similar one
+      summary: Delete persisted face
       
       description: | 
-        This call provides a way for you to delete the stored user data related to a face, so they won't pop out again when a face similar to the one you're storing will be detected (mandatory to perform face training in the between order to achieve this final result)
+        This call provides a way for you to delete the stored user data related to a face, so they won't pop out again when a face similar to the one you're storing will be detected (mandatory to perform face training [azure/faces/train/{user}](#/AzureFaceMg/azureTrainFace) in the between, so it's possible to achieve this final result)
       
-      operationId: AzureDeleteFace
+      operationId: azureDeleteFace
       
       consumes:
         - application/json
@@ -1027,13 +1078,13 @@ paths:
         name: user
         type: string
         required: true
-        description: User token which can be used to identify the logged user, so to perform operations on the face group related to him
+        description: User token which can be used to identify the logged user in order to perform operations on the face group related to him
         
       - in: formData
         name: persistedFaceId
         type: string
         required: true
-        description: Id of the persisted face (you can have it in the similarFace arrat resulted from previous analysis)
+        description: Id of the persisted face (you can have it in the similarFace array resulted from a previous analysis)
       
       # overwriting default global produces
       produces:
@@ -1055,14 +1106,14 @@ paths:
       description: | 
         This call provides a way for you to start training your cognitive service, in order to have a good face recognition system 
       
-      operationId: AzureTrainFace
+      operationId: azureTrainFace
       
       parameters:
       - in: path
         name: user
         type: string
         required: true
-        description: User token which can be used to identify the logged user, so to perform operations on the face group related to him
+        description: User token which can be used to identify the logged user in order to perform operations on the face group related to him
       
       # overwriting default global produces
       produces:
