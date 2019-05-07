@@ -43,15 +43,16 @@ produces:
 consumes:
   # List of mime types CogniAPI endpoints consumes.
   - application/json
-  - application/xml
+  - application/x-www-form-urlencoded
+  - application/form-data
 
 # A list of tags used by the specification with additional metadata.
 # The order of the tags can be used to reflect on their order by the parsing tools.
 tags:
   - name: Analyse
     description: Image Analysis operations provided by CogniAPI
-  - name: AsyncAnalyse
-    description: Image Async Analysis operations provided by CogniAPI
+  - name: AnalyseBatch
+    description: Image Batch Analysis operations provided by CogniAPI
   - name: GCloud
     description: Image Analysis operations provided just by Google Cloud Vision
   - name: Azure
@@ -374,6 +375,426 @@ paths:
             $ref: '#/definitions/GraphicalData'
         '400':
           description: Bad Request
+          
+  '/analyse/batch': 
+    post:
+      tags:
+        - AnalyseBatch
+      
+      summary: Starting images batch analysis 
+      
+      description: | 
+        This call will probably be the most useful since it combines in a single response all the valuable information extracted from the cognitive services mentioned above (Google Cloud Vision, Azure Computer Vision and Azure Face) and showing them in a unified schema. If you are logged (specifying your username) you can also have the recognition services integrated in this answer: for every face you'll see the ones that are most similar to it, based on the previous faces you stored into the system with [/azure/faces/{user}](#/AzureFaceMg/AzureAddFace). Respect to the simple [/analyse}](#/Analyse/analyse) call, this can process more images. It'll provide a token, which you could use in order to call [/analyse/batch/{token}/results](#/AnalyseBatch/analyseBatchResult) and get the final results when they're ready.
+      
+      operationId: analyseBatch
+      
+      parameters:
+      - in: query
+        name: user
+        type: string
+        required: false
+        description: Optional user token which can be used to identify the logged user and to provide additional features (use /auth in order to get one)
+      - in: query
+        name: minscore
+        type: number
+        required: false
+        default: 0
+        minimum: 0
+        maximum: 1
+        description: Optional score value. You can set the minimum threshold in order to filter out tags and objects with low confidence values. (If you go off the range [0,1] this value will be set to default automatically)
+      - in: formData
+        name: urls
+        type: array
+        items:
+          type: string
+        required: true
+        description: Links of the images which have to be analysed
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
+        '202':
+          description: Accepted
+          schema: # response schema can be specified for each response
+            type: string
+            description: Token which you could use in order to call [/analyse/batch/{token}/results](#/AnalyseBatch/analyseBatchResult) and get the final results when they're ready.
+        '400':
+          description: Bad Request
+
+  '/analyse/batch/{token}/results': 
+    get:
+      tags:
+        - AnalyseBatch
+      
+      summary: Complete images batch analysis results
+      
+      description: | 
+        Get all the image annotations which you requested with [/analyse/batch](#AnalyseBatch/analyseBatch)
+      
+      operationId: analyseBatchResults
+      
+      parameters:
+      - in: path
+        name: token
+        type: string
+        required: true
+        description: Token which will be used to identify the processed request
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
+        '102':
+          description: Processing
+        '200':
+          description: Ok
+          schema: # response schema can be specified for each response
+            type: array
+            items:
+              $ref: '#/definitions/ImageAnnotation'
+        '400':
+          description: Bad Request
+        '404':
+          description: Not Found
+  
+  '/analyse/batch/{token}/faces': 
+    get:
+      tags:
+        - AnalyseBatch
+      
+      summary: Images batch analysis faces results
+      
+      description: | 
+        Get all the image annotations which you requested with [/analyse/batch](#AnalyseBatch/analyseBatch) filtering out just the face objects
+      
+      operationId: analyseBatchFacesResults
+      
+      parameters:
+      - in: path
+        name: token
+        type: string
+        required: true
+        description: Token which will be used to identify the processed request
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
+        '102':
+          description: Processing
+        '200':
+          description: Ok
+          schema: # response schema can be specified for each response
+            type: array
+            items:
+              type: object
+              properties:
+                imgUrl:
+                  type: string
+                faces: 
+                  type: array
+                  items:
+                    $ref: '#/definitions/Face'
+        '400':
+          description: Bad Request
+        '404':
+          description: Not Found
+  
+  '/analyse/batch/{token}/tags': 
+    get:
+      tags:
+        - AnalyseBatch
+      
+      summary: Images batch analysis tag results
+      
+      description: | 
+        Get all the image annotations which you requested with [/analyse/batch](#AnalyseBatch/analyseBatch) filtering out just the tag objects
+      
+      operationId: analyseBatchTags
+      
+      parameters:
+      - in: path
+        name: token
+        type: string
+        required: true
+        description: Token which will be used to identify the processed request
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
+        '102':
+          description: Processing
+        '200':
+          description: Ok
+          schema: # response schema can be specified for each response
+            type: array
+            items:
+              type: object
+              properties:
+                imgUrl:
+                  type: string
+                tags:
+                  type: array
+                  items:
+                    $ref: '#/definitions/TagNoBound'
+        '400':
+          description: Bad Request
+        '404':
+          description: Not Found
+  
+  '/analyse/batch/{token}/objects': 
+    get:
+      tags:
+        - AnalyseBatch
+      
+      summary: Images batch analysis detected objects
+      
+      description: | 
+        Get all the image annotations which you requested with [/analyse/batch](#AnalyseBatch/analyseBatch) filtering out just the objects
+      
+      operationId: analyseBatchObjects
+      
+      parameters:
+      - in: path
+        name: token
+        type: string
+        required: true
+        description: Token which will be used to identify the processed request
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
+        '102':
+          description: Processing
+        '200':
+          description: Ok
+          schema: # response schema can be specified for each response
+            type: array
+            items:
+              type: object
+              properties:
+                imgUrl:
+                  type: string
+                objects:
+                  type: array
+                  items:
+                    $ref: '#/definitions/Tag'
+        '400':
+          description: Bad Request
+        '404':
+          description: Not Found
+  
+  '/analyse/batch/{token}/description': 
+    get:
+      tags:
+        - AnalyseBatch
+      
+      summary: Images batch analysis description results
+      
+      description: | 
+        Get all the image annotations which you requested with [/analyse/batch](#AnalyseBatch/analyseBatch) filtering out just the description objects
+      
+      operationId: analyseBatchDescription
+      
+      parameters:
+      - in: path
+        name: token
+        type: string
+        required: true
+        description: Token which will be used to identify the processed request
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
+        '102':
+          description: Processing
+        '200':
+          description: Ok
+          schema: # response schema can be specified for each response
+            type: array
+            items:
+              type: object
+              properties:
+                imgUrl:
+                  type: string
+                description: 
+                  $ref: '#/definitions/Description'
+        '400':
+          description: Bad Request
+        '404':
+          description: Not Found
+  
+  '/analyse/batch/{token}/texts': 
+    get:
+      tags:
+        - AnalyseBatch
+      
+      summary: Complete images batch detected texts
+      
+      description: | 
+        Get all the image annotations which you requested with [/analyse/batch](#AnalyseBatch/analyseBatch) filtering out just the text objects
+      
+      operationId: analyseBatchTexts
+      
+      parameters:
+      - in: path
+        name: token
+        type: string
+        required: true
+        description: Token which will be used to identify the processed request
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
+        '102':
+          description: Processing
+        '200':
+          description: Ok
+          schema: # response schema can be specified for each response
+            type: array
+            items:
+              type: object
+              properties:
+                imgUrl:
+                  type: string
+                texts:
+                  type: array
+                  items:
+                    $ref: '#/definitions/Text'
+        '400':
+          description: Bad Request
+        '404':
+          description: Not Found
+  
+  '/analyse/batch/{token}/landmarks': 
+    get:
+      tags:
+        - AnalyseBatch
+      
+      summary: Images batch detected landmarks 
+      
+      description: | 
+        Get all the image annotations which you requested with [/analyse/batch](#AnalyseBatch/analyseBatch) filtering out just the landmarks objects
+      
+      operationId: analyseBatchLandmarks
+      
+      parameters:
+      - in: path
+        name: token
+        type: string
+        required: true
+        description: Token which will be used to identify the processed request
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
+        '102':
+          description: Processing
+        '200':
+          description: Ok
+          schema: # response schema can be specified for each response
+            type: array
+            items:
+              type: object
+              properties:
+                imgUrl:
+                  type: string
+                landmarks:
+                  type: array
+                  items:
+                    $ref: '#/definitions/Landmark'
+        '400':
+          description: Bad Request
+        '404':
+          description: Not Found
+  
+  '/analyse/batch/{token}/safety': 
+    get:
+      tags:
+        - AnalyseBatch
+      
+      summary: Images batch analysis safety annotations
+      
+      description: | 
+        Get all the image annotations which you requested with [/analyse/batch](#AnalyseBatch/analyseBatch) filtering out just the safety annotation objects
+      
+      operationId: analyseBatchSafety
+      
+      parameters:
+      - in: path
+        name: token
+        type: string
+        required: true
+        description: Token which will be used to identify the processed request
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
+        '102':
+          description: Processing
+        '200':
+          description: Ok
+          schema: # response schema can be specified for each response
+            type: array
+            items:
+              type: object
+              properties:
+                imgUrl:
+                  type: string
+                safetyAnnotations:
+                  $ref: '#/definitions/SafetyAnnotation'
+        '400':
+          description: Bad Request
+        '404':
+          description: Not Found
+  
+  '/analyse/batch/{token}/colors': 
+    get:
+      tags:
+        - AnalyseBatch
+      
+      summary: Images batch analysis graphical data
+      
+      description: | 
+        Get all the image annotations which you requested with [/analyse/batch](#AnalyseBatch/analyseBatch) filtering out just the graphical annotation objects
+      
+      operationId: analyseBatchColor
+      
+      parameters:
+      - in: path
+        name: token
+        type: string
+        required: true
+        description: Token which will be used to identify the processed request
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
+        '102':
+          description: Processing
+        '200':
+          description: Ok
+          schema: # response schema can be specified for each response
+            type: array
+            items:
+              type: object
+              properties:
+                imgUrl:
+                  type: string
+                graphicalData:
+                  $ref: '#/definitions/GraphicalData'
+        '400':
+          description: Bad Request
+        '404':
+          description: Not Found
   
   '/gcloud/analyse': 
     get:
@@ -1104,7 +1525,7 @@ paths:
       summary: Train your face group (mandatory after adding, patching or deleting face operations)
       
       description: | 
-        This call provides a way for you to start training your cognitive service, in order to have a good face recognition system 
+        This call provides a way for you to START training your cognitive service, in order to have a good face recognition system. Note carefully: the training can take time if you've stored a lot of faces and until it's done you won't be able to effectively use the face recognition system (**you'll get empty array in similar faces**)
       
       operationId: azureTrainFace
       
@@ -1401,6 +1822,10 @@ definitions:
       name:
         description: Concept, object, logo, celebrity name
         type: string
+      mid:
+        description: Opaque entity ID. Some IDs may be available in Google Knowledge Graph Search API.
+        type: string
+        x-nullable: true
       confidence:
         description: Level of confidence for the detected concept, logo, object, celebrity
         type: number
@@ -1413,6 +1838,10 @@ definitions:
       name:
         description: Concept, object, logo, celebrity name
         type: string
+      mid:
+        description: Opaque entity ID. Some IDs may be available in Google Knowledge Graph Search API.
+        type: string
+        x-nullable: true
       confidence:
         description: Level of confidence for the detected concept, logo, object, celebrity
         type: number
@@ -1432,6 +1861,9 @@ definitions:
         type: number
         minimum: 0
         maximum: 1
+      locale:
+        description: The language code for the locale in which the entity textual description is expressed
+        type: string
       boundingBox:
         $ref: '#/definitions/BoundingBox'
   
@@ -1441,6 +1873,10 @@ definitions:
       name:
         description: Name of the detected landmark
         type: string
+      mid:
+        description: Opaque entity ID. Some IDs may be available in Google Knowledge Graph Search API.
+        type: string
+        x-nullable: true
       confidence:
         description: Level of confidence in relation to the presence of the detected landmark
         type: number
@@ -1451,13 +1887,16 @@ definitions:
         type: number
         minimum: -90
         maximum: 90
+        x-nullable: true
       longitude:
         description: Longitude coordinate for the detected landmark 
         type: number
         minimum: -180
         maximum: 180
+        x-nullable: true
       boundingBox:
         $ref: '#/definitions/BoundingBox'
+        x-nullable: true
   
   Description:
     type: object
@@ -1865,10 +2304,108 @@ definitions:
         properties:
           underExposedLikelihood:
             $ref: '#/definitions/ConfidenceLabel'
-      
+  
+  WebEntity:
+    type: object
+    description: Entity deduced from similar images on the Internet.
+    properties:
+      entityId:
+        description: Opaque entity ID.
+        type: string
+      score:
+        description: Overall relevancy score for the entity. Not normalized and not comparable across different image queries.
+        type: number
+        minimum: 0
+        maximum: 1
+      description:
+        description: Canonical description of the entity, in English.
+        type: string
+  
+  WebLabel:
+    type: object
+    description: Label to provide extra metadata for the web detection.
+    properties:
+      label:
+        description: Label for extra metadata.
+        type: string
+      languageCode:
+        description: The BCP-47 language code for label, such as "en-US" or "sr-Latn". For more information, see http://www.unicode.org/reports/tr35/#Unicode_locale_identifier.
+        type: string
+
+  WebImage:
+    type: object
+    description: Metadata for online images.
+    properties:
+      url:
+        description: The result image URL.
+        type: string
+      score:
+        description: (Deprecated) Overall relevancy score for the image.
+        type: number
+        minimum: 0
+        maximum: 1
+
+  WebPage:
+    type: object
+    description: Metadata for web pages.
+    properties:
+      url:
+        description: The result web page URL.
+        type: string
+      score:
+        description: (Deprecated) Overall relevancy score for the web page.
+        type: number
+        minimum: 0
+        maximum: 1
+      pageTitle:
+        description: Title for the web page, may contain HTML markups.
+        type: string
+      fullMatchingImages:
+        description: Fully matching images on the page. Can include resized copies of the query image.
+        type: array
+        items:
+          $ref: '#/definitions/WebImage'
+      partialMatchingImages:
+        description: Partial matching images on the page. Those images are similar enough to share some key-point features. For example an original image will likely have partial matching for its crops.
+        type: array
+        items:
+          $ref: '#/definitions/WebImage'
+
+  WebDetection:
+    type: object
+    description: Relevant information for the image from the Internet.
+    properties:
+      webEntities:
+        type: array
+        items:
+          $ref: '#/definitions/WebEntity'
+      fullMatchingImages:
+        type: array
+        items:
+          $ref: '#/definitions/WebImage'
+      partialMatchingImages:
+        type: array
+        items:
+          $ref: '#/definitions/WebImage'
+      pagesWithMatchingImages:
+        type: array
+        items:
+          $ref: '#/definitions/WebPage'
+      visualSimilarImages:
+        type: array
+        items:
+          $ref: '#/definitions/WebImage'
+      bestGuessLabels:
+        type: array
+        items:
+          $ref: '#/definitions/WebLabel'
+        
+   
   ImageAnnotation:
     type: object
     properties:
+      imgUrl:
+        type: string
       metadata:
         $ref: '#/definitions/Metadata'
       texts:
@@ -1897,10 +2434,14 @@ definitions:
           $ref: '#/definitions/Face'
       safetyAnnotations:
         $ref: '#/definitions/SafetyAnnotation'
+      webDetection:
+        $ref: '#/definitions/WebDetection'
         
   AzureImageAnnotation:
     type: object
     properties:
+      imgUrl:
+        type: string
       metadata:
         $ref: '#/definitions/Metadata'
       landmarks:
@@ -1929,6 +2470,10 @@ definitions:
   GCloudImageAnnotation:
     type: object
     properties:
+      imgUrl:
+        type: string
+      metadata:
+        $ref: '#/definitions/Metadata'
       texts:
         type: array
         items:
@@ -1955,3 +2500,5 @@ definitions:
           $ref: '#/definitions/GCloudFace'
       safetyAnnotations:
         $ref: '#/definitions/GCloudSafetyAnnotation'
+      webDetection:
+        $ref: '#/definitions/WebDetection'
