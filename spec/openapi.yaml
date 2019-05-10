@@ -920,7 +920,7 @@ paths:
       description: | 
         Get all the image annotations which you requested with [/analyse/batch](#AnalyseBatch/analyseBatch) filtering out just the graphical annotation objects
       
-      operationId: analyseBatchColor
+      operationId: analyseBatchWebD
       
       parameters:
       - in: path
@@ -2124,7 +2124,6 @@ definitions:
       mid:
         description: Opaque entity ID. Some IDs may be available in Google Knowledge Graph Search API.
         type: string
-        x-nullable: true
       confidence:
         description: Level of confidence for the detected concept, logo, object, celebrity
         type: number
@@ -2140,7 +2139,6 @@ definitions:
       mid:
         description: Opaque entity ID. Some IDs may be available in Google Knowledge Graph Search API.
         type: string
-        x-nullable: true
       confidence:
         description: Level of confidence for the detected concept, logo, object, celebrity
         type: number
@@ -2175,7 +2173,6 @@ definitions:
       mid:
         description: Opaque entity ID. Some IDs may be available in Google Knowledge Graph Search API.
         type: string
-        x-nullable: true
       confidence:
         description: Level of confidence in relation to the presence of the detected landmark
         type: number
@@ -2186,16 +2183,13 @@ definitions:
         type: number
         minimum: -90
         maximum: 90
-        x-nullable: true
       longitude:
         description: Longitude coordinate for the detected landmark 
         type: number
         minimum: -180
         maximum: 180
-        x-nullable: true
       boundingBox:
         $ref: '#/definitions/BoundingBox'
-        x-nullable: true
   
   Description:
     type: object
