@@ -136,9 +136,16 @@ paths:
         '200':
           description: Success
           schema: # response schema can be specified for each response
-            type: array
-            items:
-              $ref: '#/definitions/Face'
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              faces:
+                type: array
+                items:
+                  $ref: '#/definitions/Face'
         '400':
           description: Bad Request
   
@@ -176,9 +183,16 @@ paths:
         '200':
           description: Success
           schema: # response schema can be specified for each response
-            type: array
-            items:
-              $ref: '#/definitions/TagNoBound'
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              tags:
+                type: array
+                items:
+                  $ref: '#/definitions/TagNoBound'
         '400':
           description: Bad Request
           
@@ -216,9 +230,16 @@ paths:
         '200':
           description: Success
           schema: # response schema can be specified for each response
-            type: array
-            items:
-              $ref: '#/definitions/Tag'
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              objects:
+                type: array
+                items:
+                  $ref: '#/definitions/Tag'
         '400':
           description: Bad Request
           
@@ -248,7 +269,14 @@ paths:
         '200':
           description: Success
           schema: # response schema can be specified for each response
-            $ref: '#/definitions/Description'
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              description:
+                $ref: '#/definitions/Description'
         '400':
           description: Bad Request
           
@@ -278,9 +306,16 @@ paths:
         '200':
           description: Success
           schema: # response schema can be specified for each response
-            type: array
-            items:
-              $ref: '#/definitions/Text'
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              texts:
+                type: array
+                items:
+                  $ref: '#/definitions/Text' 
         '400':
           description: Bad Request
   
@@ -310,9 +345,16 @@ paths:
         '200':
           description: Success
           schema: # response schema can be specified for each response
-            type: array
-            items:
-              $ref: '#/definitions/Landmark'
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              landmarks:
+                type: array
+                items:
+                  $ref: '#/definitions/Landmark'
         '400':
           description: Bad Request
           
@@ -342,7 +384,14 @@ paths:
         '200':
           description: Success
           schema: # response schema can be specified for each response
-            $ref: '#/definitions/SafetyAnnotation'
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              safetyAnnotations:
+                $ref: '#/definitions/SafetyAnnotation'
         '400':
           description: Bad Request
   
@@ -372,7 +421,53 @@ paths:
         '200':
           description: Success
           schema: # response schema can be specified for each response
-            $ref: '#/definitions/GraphicalData'
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              graphicalData:
+                $ref: '#/definitions/GraphicalData'
+        '400':
+          description: Bad Request
+          
+  '/analyse/web': 
+    get:
+      tags:
+        - Analyse
+      
+      summary: Web Detection analysis of image content
+      
+      description: | 
+        This call provides an analysis of the image, supplying pages and other images founded in the web (fuly or partially) matching with the one analysed, in addition to a full web entities (related to the ones in Google Graph Network)
+      
+      operationId: analyseWebD
+      
+      parameters:
+      - in: query
+        name: url
+        type: string
+        required: true
+        description: Link of the image which has to be analysed
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
+        '200':
+          description: Success
+          schema: # response schema can be specified for each response
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              webDetection:
+                type: array
+                items:
+                  $ref: '#/definitions/WebDetection'
         '400':
           description: Bad Request
           
@@ -417,12 +512,15 @@ paths:
         '202':
           description: Accepted
           schema: # response schema can be specified for each response
-            type: string
-            description: Token which you could use in order to call [/analyse/batch/{token}/results](#/AnalyseBatch/analyseBatchResult) and get the final results when they're ready.
+            type: object
+            properties:
+              btoken:
+                type: string
+                description: Token which you could use in order to call [/analyse/batch/{token}/results](#/AnalyseBatch/analyseBatchResult) and get the final results when they're ready.
         '400':
           description: Bad Request
 
-  '/analyse/batch/{token}/results': 
+  '/analyse/batch/{token}': 
     get:
       tags:
         - AnalyseBatch
@@ -445,14 +543,14 @@ paths:
       produces:
         - application/json
       responses: # list of responses
-        '102':
-          description: Processing
         '200':
           description: Ok
           schema: # response schema can be specified for each response
             type: array
             items:
               $ref: '#/definitions/ImageAnnotation'
+        '204':
+          description: No Content (Analysis is not completed yet)
         '400':
           description: Bad Request
         '404':
@@ -481,8 +579,6 @@ paths:
       produces:
         - application/json
       responses: # list of responses
-        '102':
-          description: Processing
         '200':
           description: Ok
           schema: # response schema can be specified for each response
@@ -490,12 +586,16 @@ paths:
             items:
               type: object
               properties:
-                imgUrl:
+                imageUrl:
                   type: string
+                responseStatus:
+                  $ref: '#/definitions/ResponseStatus'
                 faces: 
                   type: array
                   items:
                     $ref: '#/definitions/Face'
+        '204':
+          description: No Content (Analysis is not completed yet)
         '400':
           description: Bad Request
         '404':
@@ -524,8 +624,6 @@ paths:
       produces:
         - application/json
       responses: # list of responses
-        '102':
-          description: Processing
         '200':
           description: Ok
           schema: # response schema can be specified for each response
@@ -533,12 +631,16 @@ paths:
             items:
               type: object
               properties:
-                imgUrl:
+                imageUrl:
                   type: string
+                responseStatus:
+                  $ref: '#/definitions/ResponseStatus'
                 tags:
                   type: array
                   items:
                     $ref: '#/definitions/TagNoBound'
+        '204':
+          description: No Content (Analysis is not completed yet)
         '400':
           description: Bad Request
         '404':
@@ -567,8 +669,6 @@ paths:
       produces:
         - application/json
       responses: # list of responses
-        '102':
-          description: Processing
         '200':
           description: Ok
           schema: # response schema can be specified for each response
@@ -576,12 +676,16 @@ paths:
             items:
               type: object
               properties:
-                imgUrl:
+                imageUrl:
                   type: string
+                responseStatus:
+                  $ref: '#/definitions/ResponseStatus'
                 objects:
                   type: array
                   items:
                     $ref: '#/definitions/Tag'
+        '204':
+          description: No Content (Analysis is not completed yet)
         '400':
           description: Bad Request
         '404':
@@ -610,8 +714,6 @@ paths:
       produces:
         - application/json
       responses: # list of responses
-        '102':
-          description: Processing
         '200':
           description: Ok
           schema: # response schema can be specified for each response
@@ -619,10 +721,14 @@ paths:
             items:
               type: object
               properties:
-                imgUrl:
+                imageUrl:
                   type: string
+                responseStatus:
+                  $ref: '#/definitions/ResponseStatus'
                 description: 
                   $ref: '#/definitions/Description'
+        '204':
+          description: No Content (Analysis is not completed yet)
         '400':
           description: Bad Request
         '404':
@@ -651,8 +757,6 @@ paths:
       produces:
         - application/json
       responses: # list of responses
-        '102':
-          description: Processing
         '200':
           description: Ok
           schema: # response schema can be specified for each response
@@ -660,12 +764,16 @@ paths:
             items:
               type: object
               properties:
-                imgUrl:
+                imageUrl:
                   type: string
+                responseStatus:
+                  $ref: '#/definitions/ResponseStatus'
                 texts:
                   type: array
                   items:
                     $ref: '#/definitions/Text'
+        '204':
+          description: No Content (Analysis is not completed yet)
         '400':
           description: Bad Request
         '404':
@@ -694,8 +802,6 @@ paths:
       produces:
         - application/json
       responses: # list of responses
-        '102':
-          description: Processing
         '200':
           description: Ok
           schema: # response schema can be specified for each response
@@ -703,12 +809,16 @@ paths:
             items:
               type: object
               properties:
-                imgUrl:
+                imageUrl:
                   type: string
+                responseStatus:
+                  $ref: '#/definitions/ResponseStatus'
                 landmarks:
                   type: array
                   items:
                     $ref: '#/definitions/Landmark'
+        '204':
+          description: No Content (Analysis is not completed yet)
         '400':
           description: Bad Request
         '404':
@@ -737,8 +847,6 @@ paths:
       produces:
         - application/json
       responses: # list of responses
-        '102':
-          description: Processing
         '200':
           description: Ok
           schema: # response schema can be specified for each response
@@ -746,10 +854,14 @@ paths:
             items:
               type: object
               properties:
-                imgUrl:
+                imageUrl:
                   type: string
+                responseStatus:
+                  $ref: '#/definitions/ResponseStatus'
                 safetyAnnotations:
                   $ref: '#/definitions/SafetyAnnotation'
+        '204':
+          description: No Content (Analysis is not completed yet)
         '400':
           description: Bad Request
         '404':
@@ -778,8 +890,6 @@ paths:
       produces:
         - application/json
       responses: # list of responses
-        '102':
-          description: Processing
         '200':
           description: Ok
           schema: # response schema can be specified for each response
@@ -787,10 +897,57 @@ paths:
             items:
               type: object
               properties:
-                imgUrl:
+                imageUrl:
                   type: string
+                responseStatus:
+                  $ref: '#/definitions/ResponseStatus'
                 graphicalData:
                   $ref: '#/definitions/GraphicalData'
+        '204':
+          description: No Content (Analysis is not completed yet)
+        '400':
+          description: Bad Request
+        '404':
+          description: Not Found
+
+  '/analyse/batch/{token}/web': 
+    get:
+      tags:
+        - AnalyseBatch
+      
+      summary: Images batch analysis web detection data
+      
+      description: | 
+        Get all the image annotations which you requested with [/analyse/batch](#AnalyseBatch/analyseBatch) filtering out just the graphical annotation objects
+      
+      operationId: analyseBatchColor
+      
+      parameters:
+      - in: path
+        name: token
+        type: string
+        required: true
+        description: Token which will be used to identify the processed request
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
+        '200':
+          description: Ok
+          schema: # response schema can be specified for each response
+            type: array
+            items:
+              type: object
+              properties:
+                imageUrl:
+                  type: string
+                responseStatus:
+                  $ref: '#/definitions/ResponseStatus'
+                graphicalData:
+                  $ref: '#/definitions/WebDetection'
+        '204':
+          description: No Content (Analysis is not completed yet)
         '400':
           description: Bad Request
         '404':
@@ -860,9 +1017,16 @@ paths:
         '200':
           description: Success
           schema: # response schema can be specified for each response
-            type: array
-            items:
-              $ref: '#/definitions/GCloudFace'
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              faces:
+                type: array
+                items:
+                  $ref: '#/definitions/GCloudFace'
         '400':
           description: Bad Request
           
@@ -900,9 +1064,16 @@ paths:
         '200':
           description: Success
           schema: # response schema can be specified for each response
-            type: array
-            items:
-              $ref: '#/definitions/TagNoBound'
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              tags:
+                type: array
+                items:
+                  $ref: '#/definitions/TagNoBound'
         '400':
           description: Bad Request
           
@@ -940,9 +1111,16 @@ paths:
         '200':
           description: Success
           schema: # response schema can be specified for each response
-            type: array
-            items:
-              $ref: '#/definitions/Tag'
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              objects:
+                type: array
+                items:
+                  $ref: '#/definitions/Tag'
         '400':
           description: Bad Request
           
@@ -971,7 +1149,14 @@ paths:
         '200':
           description: Success
           schema: # response schema can be specified for each response
-            $ref: '#/definitions/GCloudDescription'
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              description:
+                $ref: '#/definitions/GCloudDescription'
         '400':
           description: Bad Request
           
@@ -1001,9 +1186,16 @@ paths:
         '200':
           description: Success
           schema: # response schema can be specified for each response
-            type: array
-            items:
-              $ref: '#/definitions/Text'
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              texts:
+                type: array
+                items:
+                  $ref: '#/definitions/Text'
         '400':
           description: Bad Request
           
@@ -1033,9 +1225,16 @@ paths:
         '200':
           description: Success
           schema: # response schema can be specified for each response
-            type: array
-            items:
-              $ref: '#/definitions/Landmark'
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              landmarks:
+                type: array
+                items:
+                  $ref: '#/definitions/Landmark'
         '400':
           description: Bad Request
           
@@ -1065,7 +1264,14 @@ paths:
         '200':
           description: Success
           schema: # response schema can be specified for each response
-            $ref: '#/definitions/GCloudSafetyAnnotation'
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              safetyAnnotations:
+                $ref: '#/definitions/GCloudSafetyAnnotation'
         '400':
           description: Bad Request
   
@@ -1094,7 +1300,51 @@ paths:
         '200':
           description: Success
           schema: # response schema can be specified for each response
-            $ref: '#/definitions/GCloudGraphicalData'
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              graphicalData:
+                $ref: '#/definitions/GCloudGraphicalData'
+        '400':
+          description: Bad Request
+          
+  '/gcloud/web': 
+    get:
+      tags:
+        - GCloud
+      
+      summary: Web Detection analysis of image content
+      
+      description: | 
+        This call provides an analysis of the image, supplying pages and other images founded in the web (fuly or partially) matching with the one analysed, in addition to a full web entities (related to the ones in Google Graph Network)
+      
+      operationId: gcloudAnalyseWebD
+      
+      parameters:
+      - in: query
+        name: url
+        type: string
+        required: true
+        description: Link of the image which has to be analysed
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
+        '200':
+          description: Success
+          schema: # response schema can be specified for each response
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              webDetection:
+                $ref: '#/definitions/WebDetection'
         '400':
           description: Bad Request
 
@@ -1175,9 +1425,16 @@ paths:
         '200':
           description: Success
           schema: # response schema can be specified for each response
-            type: array
-            items:
-              $ref: '#/definitions/AzureFace'
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              faces:
+                type: array
+                items:
+                  $ref: '#/definitions/AzureFace'
         '400':
           description: Bad Request
   
@@ -1217,9 +1474,16 @@ paths:
         '200':
           description: Success
           schema: # response schema can be specified for each response
-            type: array
-            items:
-              $ref: '#/definitions/TagNoBound'
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              tags:
+                type: array
+                items:
+                  $ref: '#/definitions/TagNoBound'
         '400':
           description: Bad Request
 
@@ -1258,9 +1522,16 @@ paths:
         '200':
           description: Success
           schema: # response schema can be specified for each response
-            type: array
-            items:
-              $ref: '#/definitions/Tag'
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              objects:
+                type: array
+                items:
+                  $ref: '#/definitions/Tag'
         '400':
           description: Bad Request
           
@@ -1290,7 +1561,14 @@ paths:
         '200':
           description: Success
           schema: # response schema can be specified for each response
-            $ref: '#/definitions/Description'
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              eresponseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              description:
+                $ref: '#/definitions/Description'
         '400':
           description: Bad Request
   
@@ -1320,9 +1598,16 @@ paths:
         '200':
           description: Success
           schema: # response schema can be specified for each response
-            type: array
-            items:
-              $ref: '#/definitions/TagNoBound'
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              landmarks:
+                type: array
+                items:
+                  $ref: '#/definitions/TagNoBound'
         '400':
           description: Bad Request
           
@@ -1352,7 +1637,14 @@ paths:
         '200':
           description: Success
           schema: # response schema can be specified for each response
-            $ref: '#/definitions/AzureSafetyAnnotation'
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              safetyAnnotations:
+                $ref: '#/definitions/AzureSafetyAnnotation'
         '400':
           description: Bad Request
   
@@ -1382,7 +1674,14 @@ paths:
         '200':
           description: Success
           schema: # response schema can be specified for each response
-            $ref: '#/definitions/AzureGraphicalData'
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              graphicalData:
+                $ref: '#/definitions/AzureGraphicalData'
         '400':
           description: Bad Request       
           
@@ -1525,7 +1824,7 @@ paths:
       summary: Train your face group (mandatory after adding, patching or deleting face operations)
       
       description: | 
-        This call provides a way for you to START training your cognitive service, in order to have a good face recognition system. Note carefully: the training can take time if you've stored a lot of faces and until it's done you won't be able to effectively use the face recognition system (**you'll get empty array in similar faces**)
+        This call provides a way for you to **START** training your cognitive service, in order to have a good face recognition system. Note carefully: the training can take time if you've stored a lot of faces and until it's done you won't be able to effectively use the face recognition system (**you'll get empty array in similar faces**)
       
       operationId: azureTrainFace
       
@@ -1540,8 +1839,8 @@ paths:
       produces:
         - application/json
       responses: # list of responses
-        '200':
-          description: Success
+        '202':
+          description: Accepted - Training has been started
         '400':
           description: Bad Request      
 
@@ -2399,12 +2698,25 @@ definitions:
         type: array
         items:
           $ref: '#/definitions/WebLabel'
+
+  ResponseStatus:
+    type: object
+    description: Response status code, with a better explanation of what could be the possible causes of the error
+    properties:
+      status:
+        type: number
+        default: 200
+      code:
+        type: string
+        default: OK
+      msg:
+        type: string
+        description: Additional string attached to the status in order to understand better the nature of the error
         
-   
   ImageAnnotation:
     type: object
     properties:
-      imgUrl:
+      imageUrl:
         type: string
       metadata:
         $ref: '#/definitions/Metadata'
@@ -2436,11 +2748,13 @@ definitions:
         $ref: '#/definitions/SafetyAnnotation'
       webDetection:
         $ref: '#/definitions/WebDetection'
+      responseStatus:
+        $ref: '#/definitions/ResponseStatus'
         
   AzureImageAnnotation:
     type: object
     properties:
-      imgUrl:
+      imageUrl:
         type: string
       metadata:
         $ref: '#/definitions/Metadata'
@@ -2466,11 +2780,13 @@ definitions:
           $ref: '#/definitions/AzureFace'
       safetyAnnotations:
         $ref: '#/definitions/AzureSafetyAnnotation'
+      responseStatus:
+        $ref: '#/definitions/ResponseStatus'
         
   GCloudImageAnnotation:
     type: object
     properties:
-      imgUrl:
+      imageUrl:
         type: string
       metadata:
         $ref: '#/definitions/Metadata'
@@ -2502,3 +2818,5 @@ definitions:
         $ref: '#/definitions/GCloudSafetyAnnotation'
       webDetection:
         $ref: '#/definitions/WebDetection'
+      responseStatus:
+        $ref: '#/definitions/ResponseStatus'
