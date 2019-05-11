@@ -104,6 +104,11 @@ paths:
             $ref: '#/definitions/ImageAnnotation'
         '400':
           description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
           
   '/analyse/faces': 
     get:
@@ -148,7 +153,12 @@ paths:
                   $ref: '#/definitions/Face'
         '400':
           description: Bad Request
-  
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+
   '/analyse/tags': 
     get:
       tags:
@@ -195,7 +205,12 @@ paths:
                   $ref: '#/definitions/TagNoBound'
         '400':
           description: Bad Request
-          
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+
   '/analyse/objects': 
     get:
       tags:
@@ -242,7 +257,12 @@ paths:
                   $ref: '#/definitions/Tag'
         '400':
           description: Bad Request
-          
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+
   '/analyse/description': 
     get:
       tags:
@@ -279,6 +299,11 @@ paths:
                 $ref: '#/definitions/Description'
         '400':
           description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
           
   '/analyse/texts': 
     get:
@@ -318,6 +343,11 @@ paths:
                   $ref: '#/definitions/Text' 
         '400':
           description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
   
   '/analyse/landmarks': 
     get:
@@ -357,6 +387,11 @@ paths:
                   $ref: '#/definitions/Landmark'
         '400':
           description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
           
   '/analyse/safety': 
     get:
@@ -394,6 +429,11 @@ paths:
                 $ref: '#/definitions/SafetyAnnotation'
         '400':
           description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
   
   '/analyse/colors': 
     get:
@@ -431,6 +471,11 @@ paths:
                 $ref: '#/definitions/GraphicalData'
         '400':
           description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
           
   '/analyse/web': 
     get:
@@ -470,6 +515,11 @@ paths:
                   $ref: '#/definitions/WebDetection'
         '400':
           description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
           
   '/analyse/batch': 
     post:
@@ -484,6 +534,13 @@ paths:
       operationId: analyseBatch
       
       parameters:
+      - in: formData
+        name: urls
+        type: array
+        items:
+          type: string
+        required: true
+        description: Links of the images which have to be analysed
       - in: query
         name: user
         type: string
@@ -497,13 +554,6 @@ paths:
         minimum: 0
         maximum: 1
         description: Optional score value. You can set the minimum threshold in order to filter out tags and objects with low confidence values. (If you go off the range [0,1] this value will be set to default automatically)
-      - in: formData
-        name: urls
-        type: array
-        items:
-          type: string
-        required: true
-        description: Links of the images which have to be analysed
       
       # overwriting default global produces
       produces:
@@ -519,6 +569,11 @@ paths:
                 description: Token which you could use in order to call [/analyse/batch/{token}/results](#/AnalyseBatch/analyseBatchResult) and get the final results when they're ready.
         '400':
           description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
 
   '/analyse/batch/{token}': 
     get:
@@ -538,6 +593,22 @@ paths:
         type: string
         required: true
         description: Token which will be used to identify the processed request
+        
+      - in: query
+        name: emotion
+        type: string
+        enum: ['anger', 'contempt', 'disgust', 'fear', 'happiness', 'neutral', 'sadness', 'surprise']
+        required: false
+        description: Filter out just the img results, which has at least a face that match with the passed emotion (highly suggested using also emotionscore to provide the minimum threshold value, otherwise it'll be set to a default amount)
+        
+      - in: query
+        name: emotionscore
+        type: number
+        default: 0.75
+        minimum: 0
+        maximum: 1
+        required: false
+        description: Used in combination with emotion query parameter to filter out just image annotation results in which appears at least a face which reveals the presence of that emotion (with a confidence value greater or equal to emotionscore you passed)
       
       # overwriting default global produces
       produces:
@@ -553,8 +624,18 @@ paths:
           description: No Content (Analysis is not completed yet)
         '400':
           description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
         '404':
-          description: Not Found
+          description: Not Found (Bad or Broken token)
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
   
   '/analyse/batch/{token}/faces': 
     get:
@@ -574,7 +655,23 @@ paths:
         type: string
         required: true
         description: Token which will be used to identify the processed request
-      
+
+      - in: query
+        name: emotion
+        type: string
+        enum: ['anger', 'contempt', 'disgust', 'fear', 'happiness', 'neutral', 'sadness', 'surprise']
+        required: false
+        description: Filter out just the img results, which has at least a face that match with the passed emotion (highly suggested using also emotionscore to provide the minimum threshold value, otherwise it'll be set to a default amount)
+        
+      - in: query
+        name: emotionscore
+        type: number
+        default: 0.75
+        minimum: 0
+        maximum: 1
+        required: false
+        description: Used in combination with emotion query parameter to filter out just image annotation results in which appears at least a face which reveals the presence of that emotion (with a confidence value greater or equal to emotionscore you passed)
+     
       # overwriting default global produces
       produces:
         - application/json
@@ -598,8 +695,18 @@ paths:
           description: No Content (Analysis is not completed yet)
         '400':
           description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
         '404':
-          description: Not Found
+          description: Not Found (Bad or Broken token)
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
   
   '/analyse/batch/{token}/tags': 
     get:
@@ -643,8 +750,18 @@ paths:
           description: No Content (Analysis is not completed yet)
         '400':
           description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
         '404':
-          description: Not Found
+          description: Not Found (Bad or Broken token)
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
   
   '/analyse/batch/{token}/objects': 
     get:
@@ -688,8 +805,18 @@ paths:
           description: No Content (Analysis is not completed yet)
         '400':
           description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
         '404':
-          description: Not Found
+          description: Not Found (Bad or Broken token)
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
   
   '/analyse/batch/{token}/description': 
     get:
@@ -731,8 +858,18 @@ paths:
           description: No Content (Analysis is not completed yet)
         '400':
           description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
         '404':
-          description: Not Found
+          description: Not Found (Bad or Broken token)
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
   
   '/analyse/batch/{token}/texts': 
     get:
@@ -776,8 +913,18 @@ paths:
           description: No Content (Analysis is not completed yet)
         '400':
           description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
         '404':
-          description: Not Found
+          description: Not Found (Bad or Broken token)
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
   
   '/analyse/batch/{token}/landmarks': 
     get:
@@ -821,8 +968,18 @@ paths:
           description: No Content (Analysis is not completed yet)
         '400':
           description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
         '404':
-          description: Not Found
+          description: Not Found (Bad or Broken token)
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
   
   '/analyse/batch/{token}/safety': 
     get:
@@ -864,8 +1021,18 @@ paths:
           description: No Content (Analysis is not completed yet)
         '400':
           description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
         '404':
-          description: Not Found
+          description: Not Found (Bad or Broken token)
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
   
   '/analyse/batch/{token}/colors': 
     get:
@@ -907,8 +1074,18 @@ paths:
           description: No Content (Analysis is not completed yet)
         '400':
           description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
         '404':
-          description: Not Found
+          description: Not Found (Bad or Broken token)
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
 
   '/analyse/batch/{token}/web': 
     get:
@@ -950,8 +1127,18 @@ paths:
           description: No Content (Analysis is not completed yet)
         '400':
           description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
         '404':
-          description: Not Found
+          description: Not Found (Bad or Broken token)
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
   
   '/gcloud/analyse': 
     get:
@@ -990,6 +1177,11 @@ paths:
             $ref: '#/definitions/GCloudImageAnnotation'
         '400':
           description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
           
   '/gcloud/faces': 
     get:
@@ -1029,6 +1221,11 @@ paths:
                   $ref: '#/definitions/GCloudFace'
         '400':
           description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
           
   '/gcloud/tags': 
     get:
@@ -1076,6 +1273,11 @@ paths:
                   $ref: '#/definitions/TagNoBound'
         '400':
           description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
           
   '/gcloud/objects': 
     get:
@@ -1123,6 +1325,11 @@ paths:
                   $ref: '#/definitions/Tag'
         '400':
           description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
           
   '/gcloud/description': 
     get:
@@ -1159,6 +1366,11 @@ paths:
                 $ref: '#/definitions/GCloudDescription'
         '400':
           description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
           
   '/gcloud/texts': 
     get:
@@ -1198,6 +1410,11 @@ paths:
                   $ref: '#/definitions/Text'
         '400':
           description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
           
   '/gcloud/landmarks': 
     get:
@@ -1237,6 +1454,11 @@ paths:
                   $ref: '#/definitions/Landmark'
         '400':
           description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
           
   '/gcloud/safety': 
     get:
@@ -1274,6 +1496,11 @@ paths:
                 $ref: '#/definitions/GCloudSafetyAnnotation'
         '400':
           description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
   
   '/gcloud/colors': 
     get:
@@ -1310,6 +1537,11 @@ paths:
                 $ref: '#/definitions/GCloudGraphicalData'
         '400':
           description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
           
   '/gcloud/web': 
     get:
@@ -1347,6 +1579,11 @@ paths:
                 $ref: '#/definitions/WebDetection'
         '400':
           description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
 
   '/azure/analyse': 
     get:
@@ -1392,6 +1629,11 @@ paths:
             $ref: '#/definitions/AzureImageAnnotation'
         '400':
           description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
           
   '/azure/faces': 
     get:
@@ -1437,6 +1679,11 @@ paths:
                   $ref: '#/definitions/AzureFace'
         '400':
           description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
   
   '/azure/tags': 
     get:
@@ -1486,6 +1733,11 @@ paths:
                   $ref: '#/definitions/TagNoBound'
         '400':
           description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
 
   '/azure/objects': 
     get:
@@ -1534,6 +1786,11 @@ paths:
                   $ref: '#/definitions/Tag'
         '400':
           description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
           
   '/azure/description': 
     get:
@@ -1571,6 +1828,11 @@ paths:
                 $ref: '#/definitions/Description'
         '400':
           description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
   
   '/azure/landmarks': 
     get:
@@ -1610,6 +1872,11 @@ paths:
                   $ref: '#/definitions/TagNoBound'
         '400':
           description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
           
   '/azure/safety': 
     get:
@@ -1647,6 +1914,11 @@ paths:
                 $ref: '#/definitions/AzureSafetyAnnotation'
         '400':
           description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
   
   '/azure/colors': 
     get:
@@ -1683,7 +1955,12 @@ paths:
               graphicalData:
                 $ref: '#/definitions/AzureGraphicalData'
         '400':
-          description: Bad Request       
+          description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'  
           
   '/azure/faces/{user}':   
     post:
