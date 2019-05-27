@@ -1873,7 +1873,8 @@ paths:
       responses:
         '200':
           description: Training status available and fetched for the selected user
-          $ref: '#/definitions/TrainingStatus'
+          schema:
+            $ref: '#/definitions/TrainingStatus'
         '400':
           description: Bad Request
 definitions:
