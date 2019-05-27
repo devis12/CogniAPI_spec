@@ -9,17 +9,71 @@ info:
   description: |
     CogniAPI aims to provide you a simpler and more straightforward way to analyse and process images content expoiting the power of Azure and Google Cloud cognitive services
     # Introduction
-    This specification is intended to to be a good starting point for describing CogniAPI in 
-    [OpenAPI/Swagger format](https://github.com/OAI/OpenAPI-Specification/blob/master/versions/2.0.md).
+    This specification is intended to to be a good starting point for describing CogniAPI in [OpenAPI/Swagger format](https://github.com/OAI/OpenAPI-Specification/blob/master/versions/2.0.md).
     
     # CogniAPI Specification
-    The goal of The CogniAPI Specification is to guide you to the use of a less intricate but very useful REST service for image analysis which could be applied in many cases. Exploiting the power of Azure Computer Vision, Azure Face and Google Cloud Vision, this APIs will try to provide all the results to you in a unified and more straightforward schema. The properties provided to you could be resume in the following list:
+    The goal of The CogniAPI Specification is to guide you to the use of a less intricate but very useful REST service for image analysis which could be applied in many cases. Exploiting the power of Azure Computer Vision, Azure Face and Google Cloud Vision, this APIs will try to provide all the results to you in a unified and more straightforward schema. The properties provided to you could be resumed in the following list:
     
-      * Retrieving tags which tries to condensate the image content in a set of words
-      * Detecting objects, locations and people of interest
-      * Detecting faces (with emotions, gender, age and additional attributes related to them)
-      * Evaluating the presence of inappropriate content in the image (racy, adult, violence, ...)
-      * Complete analysis of the colors and other graphical aspects which characterize the image
+      * Retrieving **tags** which tries to condensate the image content in a set of words
+
+      * Detecting **objects**, **locations** and **people** of interest
+
+      * Detecting **faces** (with emotions, gender, age and additional attributes related to them)
+
+      * **Face recognition** capabilities: 
+        - In batch analysis of multiple images, it's possible to recognize that two faces are related to the same person
+        - The APIs gives the user the possibility to store some faces with user data (name, surname, a tag,...) related to it, so when a similar face will be detected by an API call made by the same user, the same tag will be attributed to that face
+      
+      * Detecting **texts** inside the image
+      
+      * Evaluating the presence of **inappropriate content** in the image (racy, adult, violence, ...)
+
+      * Complete analysis of the **colors** and other graphical aspects which characterize the image
+
+      * Finding **similar images** in the web
+
+    # Use case scenarios
+    Except for what concerns face recognition, everything requires just a simple and straightforward call where you simply pass the url of the image you desire to analyse.
+    
+    #### Image content
+    Let's suppose you want to obtain a generic description of the image content, so basically you want to obtain some labels, tags, detect the presence of relevant objects and know if the photo has been taken in an interesting location (e.g. in front of the Tour Eiffel).
+    You just call the [analyse/](#/Analyse/analyse) endpoint passing the url as a query parameter, wait for the result, check through the responseStatus that everything has been processed correctly (status 200, code OK) and there you have it. You'll browse through your json object exploring attributes like tags (where you have generic labels describing the image content with a correspondent level of confidence), description (a bunch of generic tags, some captions for the given image and a classification), objects and landmarks (practically speaking both of them are tags with a bounding box).
+    Of course if you want to obtain just a field value and filter out the "unnecessary", you can just make one of the calls that fills just the attribute which you care about: like if you're interested in tags, you'll call [analyse/tags](#/Analyse/analyseTag), the same for objects [analyse/objects](#/Analyse/analyseObject) and so on. Please **note** that in this cases the analysis process takes pretty much the same amount of time, so I don't suggest you to take this path to achieve best performance results, because you probably won't achieve them in this way.
+    There is the possibility to filter out also tags and objects with low confidence level, specifying a *minscore* value (e.g. if you put *miscore=0.95* as a query parameter, all the tags and objects in the result answer will be just the ones with confidence level equals or above to 0.95).
+
+    Detecting faces, texts, inappropriate contents, similar images on the web, image entities ids (id used in the Google Network Graph) and/or performing a color analysis of the image requires basically the same analysis call, which you perform above for tags and objects, and in the same way you can perform more straightforward calls with just the values you're interested in (e.g. only colors data).
+
+    #### Face recognition
+    The face recognition is a bit more tricky to achieve, but take in account that we've tried to simplify the workflow which Azure offers at the moment, so it's probably better if your bear with us, read this quick note and you'll see that it's not so difficult after all.
+    Basically for face recognition, we mean that some faces have been detected in a photo and you desire to "tag" some of them, so it'll be possible to attribute the same tag to similar faces in future analysis (i.e. recognize, with a specified level of confidence, the same person again in future analysis). This means, that first of all the face recognition process requires that **AFTER** an image analysis, you take the faces detected in the image and you persist them with some user data (e.g. name and surname) attached. 
+    How can you achieve this? You perform the call [azure/faces/{user}](#/AzureFaceMg/azureAddFace), where {user} is your username (the face stored will be associated to specific users) and in the body of the request you'll specify the url of the image which you analysed before containing the face you want to persist, the user data you desire to relate to the face and the bounding box of the face expressed as left,top,width,height (which you can also obtain in faceRectangle of the face object retrieved from the previous analysis operation). 
+    After this, the system is not trained yet and cannot recognize the faces you just add in future analysis, so you **MUST START** a training phase for your recognition model with the call [azure/faces/train/{user}](#/AzureFaceMg/azureTrainFace). Now in future analysis (simple or batch), you'll pass as query parameter the same username as value of "user" and you'll see that the detected faces will eventually be related to similar faces you stored before.
+
+    *Note: the training phase could take time (even minutes), so if you perform analysis and it's not finished yet, you still won't be able to recognize similar faces. In the resulting face objects you'll see also a training status, which indicates you if the training phase has been successfully performed, so you can check it and eventually perform the analysis in a following moment.*
+
+    #### Batch Analysis
+    The batch analysis gives you the possibility to take as an input more image urls and analyse all of them in a single batch. You simply put more image urls in the body of the request and if the process starts correctly, you'll receive a token which allows you to get the results, where they're going to be available (about a few minutes later). You'll have direct access to the results using the token for about two hours since the analysis started. As in the simple analysis you can pass your username (to enable face recognition) or a minscore threshold to filter out tags and objects with low confidence values.
+   
+    **EXTRA** The batch analysis adds some extra features to the simple one:
+      * Face matching inside the batch (e.g. if two or more faces in two are related )
+      * Filter images based on the presence of some emotion (e.g. annotation of the images which presents at least a happy face)
+
+    ##### *Batch face recognition*
+    You'll see in the result annotation objects of the analysis that every face inside the attribute presents a field called similarBatchFaceIds which is an array of string. It contains all the temporary generated ids related to a detected face which appears to be of the same person in the batch annotation. 
+    For example, let's suppose you call a batch analysis of three images where in the first one and in the third one the face of Gigi has been detected (we can also suppose that you're not "logged" or the face of Gigi is not persisted: this doesn't make any difference). In the first image, the temporary id 'xyz-123' has been attributed to Gigi and in the last one the id 'abc-789' has been given to it. So in both of the two face objects related to the detected face of Gigi there'll be the following array of similarBatchFaceIds ['xyz-123', 'abc-789'] notifying that the two detected faces are related to the same person.
+
+    ##### *Emotion filter*
+    The possible emotion values are the following:
+      * anger 
+      * contempt
+      * disgust
+      * fear
+      * happiness
+      * neutral
+      * sadness
+      * surprise
+
+    You can filter out the image annotations resulting out of a batch analysis and take just the ones which contains at least an angry/happy/sad/... face.
 
   version: '1.0.0'
 
@@ -31,8 +85,6 @@ info:
   license:
     name: MIT
     url: 'https://github.com/devis12/CogniAPI/blob/master/LICENSE'
-  x-logo:
-    url: 'https://github.com/devis12/CogniAPI/blob/master/views/img/logo.png'
 externalDocs:
   description: Find out how to create Github repo for your OpenAPI spec.
   url: 'https://github.com/Rebilly/generator-openapi-repo'
@@ -43,8 +95,6 @@ produces:
 consumes:
   # List of mime types CogniAPI endpoints consumes.
   - application/json
-  - application/x-www-form-urlencoded
-  - application/form-data
 
 # A list of tags used by the specification with additional metadata.
 # The order of the tags can be used to reflect on their order by the parsing tools.
@@ -1976,7 +2026,6 @@ paths:
       
       consumes:
         - application/json
-        - application/x-www-form-urlencoded
       
       parameters:
       - in: path
@@ -2025,7 +2074,6 @@ paths:
       
       consumes:
         - application/json
-        - application/x-www-form-urlencoded
       
       parameters:
       - in: path
@@ -2068,7 +2116,6 @@ paths:
       
       consumes:
         - application/json
-        - application/x-www-form-urlencoded
       
       parameters:
       - in: path
@@ -2118,6 +2165,35 @@ paths:
       responses: # list of responses
         '202':
           description: Accepted - Training has been started
+        '400':
+          description: Bad Request      
+
+  '/azure/faces/train/{user}/status': 
+    post:
+      tags:
+        - AzureFaceMg
+      
+      summary: See the training status of your facegroup
+      
+      description: | 
+        This call provides a way for you to **CHECK** the training status of the face recognition model related to your user: sometimes it could take even a few minutes to get the training operation completed and until that you won't see any actual results (related to face recognition) on similarFaces. If you need it, you better perform a quick check to this endpoint before
+      
+      operationId: azureTrainFaceStatus
+      
+      parameters:
+      - in: path
+        name: user
+        type: string
+        required: true
+        description: User token which can be used to identify the logged user in order to perform operations on the face group related to him
+      
+      # overwriting default global produces
+      produces:
+        - application/json
+      responses: # list of responses
+        '200':
+          description: Training status available and fetched for the selected user
+          $ref: '#/definitions/TrainingStatus'
         '400':
           description: Bad Request      
 
@@ -2723,9 +2799,19 @@ definitions:
         items:
           $ref: '#/definitions/FaceLandmarksAnnotation'
       similarFaces:
-        type: array
-        items:
-          $ref: '#/definitions/PersistedFace'
+        type: object
+        properties:
+          trainingStatus:
+            type: string
+          similarBatchFaceIds:
+            description: azure faceIds of the most similar faces detected in the same batch of photos (available just in batch analysis)
+            type: array
+            items:
+              type: string
+          similarPersistedFaces:
+            type: array
+            items:
+              $ref: '#/definitions/PersistedFace'
       celebrity:
         $ref: '#/definitions/TagNoBound'
       facialHair:
@@ -2797,9 +2883,14 @@ definitions:
         items:
           $ref: '#/definitions/FaceLandmarksAnnotation'
       similarFaces:
-        type: array
-        items:
-          $ref: '#/definitions/PersistedFace'
+        type: object
+        properties:
+          trainingStatus:
+            type: string
+          similarPersistedFaces:
+            type: array
+            items:
+              $ref: '#/definitions/PersistedFace'
       celebrity:
         $ref: '#/definitions/TagNoBound'
       facialHair:
@@ -3091,3 +3182,19 @@ definitions:
         $ref: '#/definitions/WebDetection'
       responseStatus:
         $ref: '#/definitions/ResponseStatus'
+
+  TrainingStatus:
+    description: Training status available and fetched for the selected user
+    type: object
+    properties:
+      trainingStatus:
+        type: string
+        enum: ['succeeded', 'running', 'RateLimitExceeded', 'LargeFaceListNotFound', 'LargeFaceListNotTrained']
+      createdDateTime:
+        type: string
+      lastActionDateTime:
+        type: string
+      message:
+        type: string
+      lastSuccessfulTrainingDateTime:
+        type: string
