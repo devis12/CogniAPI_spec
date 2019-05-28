@@ -2169,7 +2169,7 @@ paths:
           description: Bad Request      
 
   '/azure/faces/train/{user}/status': 
-    post:
+    get:
       tags:
         - AzureFaceMg
       
