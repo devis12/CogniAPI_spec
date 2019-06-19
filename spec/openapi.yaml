@@ -2552,8 +2552,6 @@ definitions:
         description: Array of generic tags related to the uploaded image (grouped in lists by common concepts)
         type: array
         items:
-          type: array
-          items:
             type: string
       captions:
         description: Brief sentences which aims to synthesize the content of the image
@@ -2573,8 +2571,6 @@ definitions:
         description: Array of generic tags related to the uploaded image (grouped in lists by common concepts)
         type: array
         items:
-          type: array
-          items:
             type: string
   
   RGBA:
