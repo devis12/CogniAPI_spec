@@ -3161,10 +3161,7 @@
           "description": "Array of generic tags related to the uploaded image (grouped in lists by common concepts)",
           "type": "array",
           "items": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
+            "type": "string"
           }
         },
         "captions": {
@@ -3190,10 +3187,7 @@
           "description": "Array of generic tags related to the uploaded image (grouped in lists by common concepts)",
           "type": "array",
           "items": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
+            "type": "string"
           }
         }
       }
