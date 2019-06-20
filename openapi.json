@@ -722,17 +722,7 @@
               "surprise"
             ],
             "required": false,
-            "description": "Filter out just the img results, which has at least a face that match with the passed emotion (highly suggested using also emotionscore to provide the minimum threshold value, otherwise it'll be set to a default amount)"
-          },
-          {
-            "in": "query",
-            "name": "emotionscore",
-            "type": "number",
-            "default": 0.75,
-            "minimum": 0,
-            "maximum": 1,
-            "required": false,
-            "description": "Used in combination with emotion query parameter to filter out just image annotation results in which appears at least a face which reveals the presence of that emotion (with a confidence value greater or equal to emotionscore you passed)"
+            "description": "Filter out just the img results, which has at least a face that match with the passed emotion with a high confidence level (LIKELY or VERY_LIKELY)"
           }
         ],
         "produces": [
@@ -808,16 +798,6 @@
             ],
             "required": false,
             "description": "Filter out just the img results, which has at least a face that match with the passed emotion (highly suggested using also emotionscore to provide the minimum threshold value, otherwise it'll be set to a default amount)"
-          },
-          {
-            "in": "query",
-            "name": "emotionscore",
-            "type": "number",
-            "default": 0.75,
-            "minimum": 0,
-            "maximum": 1,
-            "required": false,
-            "description": "Used in combination with emotion query parameter to filter out just image annotation results in which appears at least a face which reveals the presence of that emotion (with a confidence value greater or equal to emotionscore you passed)"
           }
         ],
         "produces": [
@@ -2711,108 +2691,6 @@
         }
       }
     },
-    "Exposure": {
-      "type": "object",
-      "properties": {
-        "exposureLevel": {
-          "description": "Face exposure level",
-          "type": "string",
-          "enum": [
-            "GoodExposure",
-            "OverExposure",
-            "UnderExposure"
-          ]
-        },
-        "value": {
-          "description": "Level of exposure expressed as a value between 0 and 1",
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1
-        },
-        "underExposedLikelihood": {
-          "description": "Google Cloud Likelihood value in order to express the level of exposure",
-          "type": "string",
-          "enum": [
-            "UNKNOWN",
-            "VERY_UNLIKELY",
-            "UNLIKELY, POSSIBLE",
-            "LIKELY",
-            "VERY_LIKELY"
-          ]
-        }
-      }
-    },
-    "AzureExposure": {
-      "type": "object",
-      "properties": {
-        "exposureLevel": {
-          "description": "Face exposure level",
-          "type": "string",
-          "enum": [
-            "GoodExposure",
-            "OverExposure",
-            "UnderExposure"
-          ]
-        },
-        "value": {
-          "description": "Level of exposure expressed as a value between 0 and 1",
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1
-        }
-      }
-    },
-    "Blur": {
-      "type": "object",
-      "properties": {
-        "blurLevel": {
-          "description": "Blur level",
-          "type": "string",
-          "enum": [
-            "Low",
-            "Medium",
-            "High"
-          ]
-        },
-        "value": {
-          "description": "Level of blur expressed as a value between 0 and 1",
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1
-        },
-        "blurredLikelihood": {
-          "description": "Google Cloud Likelihood value in order to express the level of blurriness",
-          "type": "string",
-          "enum": [
-            "UNKNOWN",
-            "VERY_UNLIKELY",
-            "UNLIKELY, POSSIBLE",
-            "LIKELY",
-            "VERY_LIKELY"
-          ]
-        }
-      }
-    },
-    "AzureBlur": {
-      "type": "object",
-      "properties": {
-        "blurLevel": {
-          "description": "Blur level",
-          "type": "string",
-          "enum": [
-            "Low",
-            "Medium",
-            "High"
-          ]
-        },
-        "value": {
-          "description": "Level of blur expressed as a value between 0 and 1",
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1
-        }
-      }
-    },
     "Noise": {
       "type": "object",
       "properties": {
@@ -2876,39 +2754,6 @@
           "type": "number",
           "minimum": 0,
           "maximum": 1
-        }
-      }
-    },
-    "Emotion": {
-      "type": "object",
-      "properties": {
-        "confidence": {
-          "description": "Probability value between 0 and 1 in order to express the confidence of the presence of the identified object",
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1
-        },
-        "confidenceLabel": {
-          "$ref": "#/definitions/ConfidenceLabel"
-        }
-      }
-    },
-    "AzureEmotion": {
-      "type": "object",
-      "properties": {
-        "confidence": {
-          "description": "Probability value between 0 and 1 in order to express the confidence of the presence of the identified object",
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1
-        }
-      }
-    },
-    "GCloudEmotion": {
-      "type": "object",
-      "properties": {
-        "confidenceLabel": {
-          "$ref": "#/definitions/ConfidenceLabel"
         }
       }
     },
@@ -3333,7 +3178,7 @@
     },
     "ConfidenceLabel": {
       "type": "string",
-      "description": "Confidence value expressed as the likelihood label offered by Google Cloud Vision",
+      "description": "Confidence value expressed as the likelihood label",
       "enum": [
         "UNKNOWN",
         "VERY_UNLIKELY",
@@ -3342,64 +3187,23 @@
         "VERY_LIKELY"
       ]
     },
-    "SafetyProperty": {
-      "type": "object",
-      "properties": {
-        "present": {
-          "description": "True if the content of the image confirm the presence of this property (property 'racy' and present=True, it means that the content has a highly probability of been racist)",
-          "type": "boolean"
-        },
-        "confidence": {
-          "description": "Confidence value expressed as a value between 0 and 1 for this safety property",
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1
-        },
-        "confidenceLabel": {
-          "$ref": "#/definitions/ConfidenceLabel"
-        }
-      }
-    },
-    "AzureSafetyProperty": {
-      "type": "object",
-      "properties": {
-        "present": {
-          "description": "True if the content of the image confirm the presence of this property (property 'racy' and present=True, it means that the content has a highly probability of been racist)",
-          "type": "boolean"
-        },
-        "confidence": {
-          "description": "Confidence value expressed as a value between 0 and 1 for this safety property",
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1
-        }
-      }
-    },
-    "GCloudSafetyProperty": {
-      "type": "object",
-      "properties": {
-        "confidenceLabel": {
-          "$ref": "#/definitions/ConfidenceLabel"
-        }
-      }
-    },
     "SafetyAnnotation": {
       "type": "object",
       "properties": {
         "racy": {
-          "$ref": "#/definitions/SafetyProperty"
+          "$ref": "#/definitions/ConfidenceLabel"
         },
         "adult": {
-          "$ref": "#/definitions/SafetyProperty"
+          "$ref": "#/definitions/ConfidenceLabel"
         },
         "violence": {
-          "$ref": "#/definitions/SafetyProperty"
+          "$ref": "#/definitions/ConfidenceLabel"
         },
         "medical": {
-          "$ref": "#/definitions/SafetyProperty"
+          "$ref": "#/definitions/ConfidenceLabel"
         },
         "spoof": {
-          "$ref": "#/definitions/SafetyProperty"
+          "$ref": "#/definitions/ConfidenceLabel"
         }
       }
     },
@@ -3407,10 +3211,10 @@
       "type": "object",
       "properties": {
         "racy": {
-          "$ref": "#/definitions/AzureSafetyProperty"
+          "$ref": "#/definitions/ConfidenceLabel"
         },
         "adult": {
-          "$ref": "#/definitions/AzureSafetyProperty"
+          "$ref": "#/definitions/ConfidenceLabel"
         }
       }
     },
@@ -3418,19 +3222,19 @@
       "type": "object",
       "properties": {
         "racy": {
-          "$ref": "#/definitions/GCloudSafetyProperty"
+          "$ref": "#/definitions/ConfidenceLabel"
         },
         "adult": {
-          "$ref": "#/definitions/GCloudSafetyProperty"
+          "$ref": "#/definitions/ConfidenceLabel"
         },
         "violence": {
-          "$ref": "#/definitions/GCloudSafetyProperty"
+          "$ref": "#/definitions/ConfidenceLabel"
         },
         "medical": {
-          "$ref": "#/definitions/GCloudSafetyProperty"
+          "$ref": "#/definitions/ConfidenceLabel"
         },
         "spoof": {
-          "$ref": "#/definitions/GCloudSafetyProperty"
+          "$ref": "#/definitions/ConfidenceLabel"
         }
       }
     },
@@ -3532,28 +3336,28 @@
           "type": "object",
           "properties": {
             "anger": {
-              "$ref": "#/definitions/Emotion"
+              "$ref": "#/definitions/ConfidenceLabel"
             },
             "contempt": {
-              "$ref": "#/definitions/Emotion"
+              "$ref": "#/definitions/ConfidenceLabel"
             },
             "disgust": {
-              "$ref": "#/definitions/Emotion"
+              "$ref": "#/definitions/ConfidenceLabel"
             },
             "fear": {
-              "$ref": "#/definitions/Emotion"
+              "$ref": "#/definitions/ConfidenceLabel"
             },
             "happiness": {
-              "$ref": "#/definitions/Emotion"
+              "$ref": "#/definitions/ConfidenceLabel"
             },
             "neutral": {
-              "$ref": "#/definitions/Emotion"
+              "$ref": "#/definitions/ConfidenceLabel"
             },
             "sadness": {
-              "$ref": "#/definitions/Emotion"
+              "$ref": "#/definitions/ConfidenceLabel"
             },
             "surprise": {
-              "$ref": "#/definitions/Emotion"
+              "$ref": "#/definitions/ConfidenceLabel"
             }
           }
         },
@@ -3572,11 +3376,11 @@
         "noise": {
           "$ref": "#/definitions/Noise"
         },
-        "blur": {
-          "$ref": "#/definitions/Blur"
+        "underExposedLikelihood": {
+          "$ref": "#/definitions/ConfidenceLabel"
         },
-        "exposure": {
-          "$ref": "#/definitions/Exposure"
+        "blurredLikelihood": {
+          "$ref": "#/definitions/ConfidenceLabel"
         }
       }
     },
@@ -3654,28 +3458,28 @@
           "type": "object",
           "properties": {
             "anger": {
-              "$ref": "#/definitions/AzureEmotion"
+              "$ref": "#/definitions/ConfidenceLabel"
             },
             "contempt": {
-              "$ref": "#/definitions/AzureEmotion"
+              "$ref": "#/definitions/ConfidenceLabel"
             },
             "disgust": {
-              "$ref": "#/definitions/AzureEmotion"
+              "$ref": "#/definitions/ConfidenceLabel"
             },
             "fear": {
-              "$ref": "#/definitions/AzureEmotion"
+              "$ref": "#/definitions/ConfidenceLabel"
             },
             "happiness": {
-              "$ref": "#/definitions/AzureEmotion"
+              "$ref": "#/definitions/ConfidenceLabel"
             },
             "neutral": {
-              "$ref": "#/definitions/AzureEmotion"
+              "$ref": "#/definitions/ConfidenceLabel"
             },
             "sadness": {
-              "$ref": "#/definitions/AzureEmotion"
+              "$ref": "#/definitions/ConfidenceLabel"
             },
             "surprise": {
-              "$ref": "#/definitions/AzureEmotion"
+              "$ref": "#/definitions/ConfidenceLabel"
             }
           }
         },
@@ -3694,11 +3498,11 @@
         "noise": {
           "$ref": "#/definitions/Noise"
         },
-        "blur": {
-          "$ref": "#/definitions/AzureBlur"
+        "underExposedLikelihood": {
+          "$ref": "#/definitions/ConfidenceLabel"
         },
-        "exposure": {
-          "$ref": "#/definitions/AzureExposure"
+        "blurredLikelihood": {
+          "$ref": "#/definitions/ConfidenceLabel"
         }
       }
     },
@@ -3721,34 +3525,24 @@
           "type": "object",
           "properties": {
             "anger": {
-              "$ref": "#/definitions/GCloudEmotion"
+              "$ref": "#/definitions/ConfidenceLabel"
             },
             "happiness": {
-              "$ref": "#/definitions/GCloudEmotion"
+              "$ref": "#/definitions/ConfidenceLabel"
             },
             "sadness": {
-              "$ref": "#/definitions/GCloudEmotion"
+              "$ref": "#/definitions/ConfidenceLabel"
             },
             "surprise": {
-              "$ref": "#/definitions/GCloudEmotion"
-            }
-          }
-        },
-        "blur": {
-          "type": "object",
-          "properties": {
-            "blurredLikelihood": {
               "$ref": "#/definitions/ConfidenceLabel"
             }
           }
         },
-        "exposure": {
-          "type": "object",
-          "properties": {
-            "underExposedLikelihood": {
-              "$ref": "#/definitions/ConfidenceLabel"
-            }
-          }
+        "underExposedLikelihood": {
+          "$ref": "#/definitions/ConfidenceLabel"
+        },
+        "blurredLikelihood": {
+          "$ref": "#/definitions/ConfidenceLabel"
         }
       }
     },
