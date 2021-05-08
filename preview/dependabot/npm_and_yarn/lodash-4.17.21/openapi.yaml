@@ -1,0 +1,2747 @@
+swagger: '2.0'
+schemes:
+  - http
+  - https
+host: cogni-api.herokuapp.com
+basePath: /
+info:
+  description: |
+    CogniAPI aims to provide you a simpler and more straightforward way to analyse and process images content expoiting the power of Azure and Google Cloud cognitive services
+    # Introduction
+    This specification is intended to to be a good starting point for describing CogniAPI in [OpenAPI/Swagger format](https://github.com/OAI/OpenAPI-Specification/blob/master/versions/2.0.md).
+
+    # CogniAPI Specification
+    The goal of The CogniAPI Specification is to guide you to the use of a less intricate but very useful REST service for image analysis which could be applied in many cases. Exploiting the power of Azure Computer Vision, Azure Face and Google Cloud Vision, this APIs will try to provide all the results to you in a unified and more straightforward schema. The properties provided to you could be resumed in the following list:
+
+      * Retrieving **tags** which tries to condensate the image content in a set of words
+
+      * Detecting **objects**, **locations** and **people** of interest
+
+      * Detecting **faces** (with emotions, gender, age and additional attributes related to them)
+
+      * **Face recognition** capabilities: 
+        - In batch analysis of multiple images, it's possible to recognize that two faces are related to the same person
+        - The APIs gives the user the possibility to store some faces with user data (name, surname, a tag,...) related to it, so when a similar face will be detected by an API call made by the same user, the same tag will be attributed to that face
+      
+      * Detecting **texts** inside the image
+      
+      * Evaluating the presence of **inappropriate content** in the image (racy, adult, violence, ...)
+
+      * Complete analysis of the **colors** and other graphical aspects which characterize the image
+
+      * Finding **similar images** in the web
+
+    # Use case scenarios
+    Except for what concerns face recognition, everything requires just a simple and straightforward call where you simply pass the url of the image you desire to analyse.
+
+    #### Image content
+    Let's suppose you want to obtain a generic description of the image content, so basically you want to obtain some labels, tags, detect the presence of relevant objects and know if the photo has been taken in an interesting location (e.g. in front of the Tour Eiffel).
+    You just call the [analyse/](#/Analyse/analyse) endpoint passing the url as a query parameter, wait for the result, check through the responseStatus that everything has been processed correctly (status 200, code OK) and there you have it. You'll browse through your json object exploring attributes like tags (where you have generic labels describing the image content with a correspondent level of confidence), description (a bunch of generic tags, some captions for the given image and a classification), objects and landmarks (practically speaking both of them are tags with a bounding box).
+    Of course if you want to obtain just a field value and filter out the "unnecessary", you can just make one of the calls that fills just the attribute which you care about: like if you're interested in tags, you'll call [analyse/tags](#/Analyse/analyseTag), the same for objects [analyse/objects](#/Analyse/analyseObject) and so on. Please **note** that in this cases the analysis process takes pretty much the same amount of time, so I don't suggest you to take this path to achieve best performance results, because you probably won't achieve them in this way.
+    There is the possibility to filter out also tags and objects with low confidence level, specifying a *minscore* value (e.g. if you put *miscore=0.95* as a query parameter, all the tags and objects in the result answer will be just the ones with confidence level equals or above to 0.95).
+
+    Detecting faces, texts, inappropriate contents, similar images on the web, image entities ids (id used in the Google Network Graph) and/or performing a color analysis of the image requires basically the same analysis call, which you perform above for tags and objects, and in the same way you can perform more straightforward calls with just the values you're interested in (e.g. only colors data).
+
+    #### Face recognition
+    The face recognition is a bit more tricky to achieve, but take in account that we've tried to simplify the workflow which Azure offers at the moment, so it's probably better if your bear with us, read this quick note and you'll see that it's not so difficult after all.
+    Basically for face recognition, we mean that some faces have been detected in a photo and you desire to "tag" some of them, so it'll be possible to attribute the same tag to similar faces in future analysis (i.e. recognize, with a specified level of confidence, the same person again in future analysis). This means, that first of all the face recognition process requires that **AFTER** an image analysis, you take the faces detected in the image and you persist them with some user data (e.g. name and surname) attached. 
+    How can you achieve this? You perform the call [azure/faces/{user}](#/AzureFaceMg/azureAddFace), where {user} is your username (the face stored will be associated to specific users) and in the body of the request you'll specify the url of the image which you analysed before containing the face you want to persist, the user data you desire to relate to the face and the bounding box of the face expressed as left,top,width,height (which you can also obtain in faceRectangle of the face object retrieved from the previous analysis operation). 
+    After this, the system is not trained yet and cannot recognize the faces you just add in future analysis, so you **MUST START** a training phase for your recognition model with the call [azure/faces/train/{user}](#/AzureFaceMg/azureTrainFace). Now in future analysis (simple or batch), you'll pass as query parameter the same username as value of "user" and you'll see that the detected faces will eventually be related to similar faces you stored before.
+
+    *Note: the training phase could take time (even minutes), so if you perform analysis and it's not finished yet, you still won't be able to recognize similar faces. In the resulting face objects you'll see also a training status, which indicates you if the training phase has been successfully performed, so you can check it and eventually perform the analysis in a following moment.*
+
+    #### Batch Analysis
+    The batch analysis gives you the possibility to take as an input more image urls and analyse all of them in a single batch. You simply put more image urls in the body of the request and if the process starts correctly, you'll receive a token which allows you to get the results, where they're going to be available (about a few minutes later). You'll have direct access to the results using the token for about two hours since the analysis started. As in the simple analysis you can pass your username (to enable face recognition) or a minscore threshold to filter out tags and objects with low confidence values.
+
+    **EXTRA** The batch analysis adds some extra features to the simple one:
+      * Face matching inside the batch (e.g. if two or more faces in two are related )
+      * Filter images based on the presence of some emotion (e.g. annotation of the images which presents at least a happy face)
+
+    ##### *Batch face recognition*
+    You'll see in the result annotation objects of the analysis that every face inside the attribute presents a field called similarBatchFaceIds which is an array of string. It contains all the temporary generated ids related to a detected face which appears to be of the same person in the batch annotation. 
+    For example, let's suppose you call a batch analysis of three images where in the first one and in the third one the face of Gigi has been detected (we can also suppose that you're not "logged" or the face of Gigi is not persisted: this doesn't make any difference). In the first image, the temporary id 'xyz-123' has been attributed to Gigi and in the last one the id 'abc-789' has been given to it. So in both of the two face objects related to the detected face of Gigi there'll be the following array of similarBatchFaceIds ['xyz-123', 'abc-789'] notifying that the two detected faces are related to the same person.
+
+    ##### *Emotion filter*
+    The possible emotion values are the following:
+      * anger 
+      * contempt
+      * disgust
+      * fear
+      * happiness
+      * neutral
+      * sadness
+      * surprise
+
+    You can filter out the image annotations resulting out of a batch analysis and take just the ones which contains at least an angry/happy/sad/... face.
+  version: 1.0.0
+  title: CogniAPI
+  termsOfService: 'https://cogni-api.herokuapp.com/terms/'
+  contact:
+    email: devis.dalmoro@studenti.unitn.it
+  license:
+    name: MIT
+    url: 'https://github.com/devis12/CogniAPI/blob/master/LICENSE'
+externalDocs:
+  description: Find out how to create Github repo for your OpenAPI spec.
+  url: 'https://github.com/Rebilly/generator-openapi-repo'
+produces:
+  - application/json
+  - text/plain
+consumes:
+  - application/json
+tags:
+  - name: Analyse
+    description: Image Analysis operations provided by CogniAPI
+  - name: AnalyseBatch
+    description: Image Batch Analysis operations provided by CogniAPI
+  - name: GCloud
+    description: Image Analysis operations provided just by Google Cloud Vision
+  - name: Azure
+    description: Image Analysis operations provided just by Azure Computer Vision and Azure Face
+  - name: AzureFaceMg
+    description: Face training operations provided just by Azure Face
+paths:
+  /analyse:
+    get:
+      tags:
+        - Analyse
+      summary: Complete image analysis
+      description: |
+        This call will probably be the most useful since it combines in a single response all the valuable information extracted from the cognitive services mentioned above (Google Cloud Vision, Azure Computer Vision and Azure Face) and showing them in a unified schema. If you are logged (specifying your username) you can also have the recognition services integrated in this answer: for every face you'll see the ones that are most similar to it, based on the previous faces you stored into the system with [/azure/faces/{user}](#/AzureFaceMg/AzureAddFace)
+      operationId: analyse
+      parameters:
+        - in: query
+          name: user
+          type: string
+          required: false
+          description: Optional user token which can be used to identify the logged user and to provide additional features (use /auth in order to get one)
+        - in: query
+          name: minscore
+          type: number
+          required: false
+          default: 0
+          minimum: 0
+          maximum: 1
+          description: 'Optional score value. You can set the minimum threshold in order to filter out tags and objects with low confidence values. (If you go off the range [0,1] this value will be set to default automatically)'
+        - in: query
+          name: url
+          type: string
+          required: true
+          description: Link of the image which has to be analysed
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/ImageAnnotation'
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+  /analyse/faces:
+    get:
+      tags:
+        - Analyse
+      summary: Analysis of detected faces in the image
+      description: |
+        This call will provide a full face detection and recognition of the image (the second one will be performed just if the user is logged)
+      operationId: analyseFace
+      parameters:
+        - in: query
+          name: user
+          type: string
+          required: false
+          description: Optional user token which can be used to identify the logged user and to provide additional features (face recognition)
+        - in: query
+          name: url
+          type: string
+          required: true
+          description: Link of the image which has to be analysed
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              faces:
+                type: array
+                items:
+                  $ref: '#/definitions/Face'
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+  /analyse/tags:
+    get:
+      tags:
+        - Analyse
+      summary: Image tag analysis
+      description: |
+        This call provides just tag and labels, respect to what it's possible to obtain with a full and complete [/analyse](#/Analyse/analyse) call
+      operationId: analyseTag
+      parameters:
+        - in: query
+          name: url
+          type: string
+          required: true
+          description: Link of the image which has to be analysed
+        - in: query
+          name: minscore
+          type: number
+          required: false
+          default: 0
+          minimum: 0
+          maximum: 1
+          description: 'Optional score value. You can set the minimum threshold in order to filter out tags with low confidence values. (If you go off the range [0,1] this value will be set to default automatically)'
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              tags:
+                type: array
+                items:
+                  $ref: '#/definitions/TagNoBound'
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+  /analyse/objects:
+    get:
+      tags:
+        - Analyse
+      summary: Image objects detection
+      description: |
+        This call provides just detected objects, respect to what it's possible to obtain with a full and complete [/analyse](#/Analyse/analyse) call
+      operationId: analyseObject
+      parameters:
+        - in: query
+          name: url
+          type: string
+          required: true
+          description: Link of the image which has to be analysed
+        - in: query
+          name: minscore
+          type: number
+          required: false
+          default: 0
+          minimum: 0
+          maximum: 1
+          description: 'Optional score value. You can set the minimum threshold in order to filter out objects with low confidence values. (If you go off the range [0,1] this value will be set to default automatically)'
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              objects:
+                type: array
+                items:
+                  $ref: '#/definitions/Tag'
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+  /analyse/description:
+    get:
+      tags:
+        - Analyse
+      summary: Description of image content
+      description: |
+        This call provides a brief description of the image content: there will be a bunch of generic tags, grouped by concept, some captions and a classification based on a 86 category taxonomy defined here https://docs.microsoft.com/en-us/azure/cognitive-services/Computer-vision/category-taxonomy
+      operationId: analyseDescription
+      parameters:
+        - in: query
+          name: url
+          type: string
+          required: true
+          description: Link of the image which has to be analysed
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              description:
+                $ref: '#/definitions/Description'
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+  /analyse/texts:
+    get:
+      tags:
+        - Analyse
+      summary: Text detection of supplied image
+      description: |
+        This call will return the texts which have been detected inside the image
+      operationId: analyseText
+      parameters:
+        - in: query
+          name: url
+          type: string
+          required: true
+          description: Link of the image which has to be analysed
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              texts:
+                type: array
+                items:
+                  $ref: '#/definitions/Text'
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+  /analyse/landmarks:
+    get:
+      tags:
+        - Analyse
+      summary: Landmark detection of supplied image
+      description: |
+        This call will return the landmarks (locations of interest) which have been detected inside the image
+      operationId: analyseLandmark
+      parameters:
+        - in: query
+          name: url
+          type: string
+          required: true
+          description: Link of the image which has to be analysed
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              landmarks:
+                type: array
+                items:
+                  $ref: '#/definitions/Landmark'
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+  /analyse/safety:
+    get:
+      tags:
+        - Analyse
+      summary: Safety tags annotation of supplied image
+      description: |
+        This call will return the safety properties (racy likelihood, level of violence detected in the image and so on) related to the linked image. This aims to evaluate the likelihood of inappropriate content in the image
+      operationId: analyseSafety
+      parameters:
+        - in: query
+          name: url
+          type: string
+          required: true
+          description: Link of the image which has to be analysed
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              safetyAnnotations:
+                $ref: '#/definitions/SafetyAnnotation'
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+  /analyse/colors:
+    get:
+      tags:
+        - Analyse
+      summary: Color analysis of image content
+      description: |
+        This call provides a complete analysis of the image colors 
+      operationId: analyseColor
+      parameters:
+        - in: query
+          name: url
+          type: string
+          required: true
+          description: Link of the image which has to be analysed
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              graphicalData:
+                $ref: '#/definitions/GraphicalData'
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+  /analyse/web:
+    get:
+      tags:
+        - Analyse
+      summary: Web Detection analysis of image content
+      description: |
+        This call provides an analysis of the image, supplying pages and other images founded in the web (fuly or partially) matching with the one analysed, in addition to a full web entities (related to the ones in Google Graph Network)
+      operationId: analyseWebD
+      parameters:
+        - in: query
+          name: url
+          type: string
+          required: true
+          description: Link of the image which has to be analysed
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              webDetection:
+                type: array
+                items:
+                  $ref: '#/definitions/WebDetection'
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+  /analyse/batch:
+    post:
+      tags:
+        - AnalyseBatch
+      summary: Starting images batch analysis
+      description: |
+        This call will probably be the most useful since it combines in a single response all the valuable information extracted from the cognitive services mentioned above (Google Cloud Vision, Azure Computer Vision and Azure Face) and showing them in a unified schema. If you are logged (specifying your username) you can also have the recognition services integrated in this answer: for every face you'll see the ones that are most similar to it, based on the previous faces you stored into the system with [/azure/faces/{user}](#/AzureFaceMg/AzureAddFace). Respect to the simple [/analyse}](#/Analyse/analyse) call, this can process more images. It'll provide a token, which you could use in order to call [/analyse/batch/{token}/results](#/AnalyseBatch/analyseBatchResult) and get the final results when they're ready.
+      operationId: analyseBatch
+      parameters:
+        - in: formData
+          name: urls
+          type: array
+          items:
+            type: string
+          required: true
+          description: Links of the images which have to be analysed
+        - in: query
+          name: user
+          type: string
+          required: false
+          description: Optional user token which can be used to identify the logged user and to provide additional features (use /auth in order to get one)
+        - in: query
+          name: minscore
+          type: number
+          required: false
+          default: 0
+          minimum: 0
+          maximum: 1
+          description: 'Optional score value. You can set the minimum threshold in order to filter out tags and objects with low confidence values. (If you go off the range [0,1] this value will be set to default automatically)'
+      produces:
+        - application/json
+      responses:
+        '202':
+          description: Accepted
+          schema:
+            type: object
+            properties:
+              btoken:
+                type: string
+                description: 'Token which you could use in order to call [/analyse/batch/{token}/results](#/AnalyseBatch/analyseBatchResult) and get the final results when they''re ready.'
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+  '/analyse/batch/{token}':
+    get:
+      tags:
+        - AnalyseBatch
+      summary: Complete images batch analysis results
+      description: |
+        Get all the image annotations which you requested with [/analyse/batch](#AnalyseBatch/analyseBatch)
+      operationId: analyseBatchResults
+      parameters:
+        - in: path
+          name: token
+          type: string
+          required: true
+          description: Token which will be used to identify the processed request
+        - in: query
+          name: emotion
+          type: string
+          enum:
+            - anger
+            - contempt
+            - disgust
+            - fear
+            - happiness
+            - neutral
+            - sadness
+            - surprise
+          required: false
+          description: 'Filter out just the img results, which has at least a face that match with the passed emotion with a high confidence level (LIKELY or VERY_LIKELY)'
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Ok
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/ImageAnnotation'
+        '204':
+          description: No Content (Analysis is not completed yet)
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+        '404':
+          description: Not Found (Bad or Broken token)
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+  '/analyse/batch/{token}/faces':
+    get:
+      tags:
+        - AnalyseBatch
+      summary: Images batch analysis faces results
+      description: |
+        Get all the image annotations which you requested with [/analyse/batch](#AnalyseBatch/analyseBatch) filtering out just the face objects
+      operationId: analyseBatchFacesResults
+      parameters:
+        - in: path
+          name: token
+          type: string
+          required: true
+          description: Token which will be used to identify the processed request
+        - in: query
+          name: emotion
+          type: string
+          enum:
+            - anger
+            - contempt
+            - disgust
+            - fear
+            - happiness
+            - neutral
+            - sadness
+            - surprise
+          required: false
+          description: 'Filter out just the img results, which has at least a face that match with the passed emotion (highly suggested using also emotionscore to provide the minimum threshold value, otherwise it''ll be set to a default amount)'
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Ok
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                imageUrl:
+                  type: string
+                responseStatus:
+                  $ref: '#/definitions/ResponseStatus'
+                faces:
+                  type: array
+                  items:
+                    $ref: '#/definitions/Face'
+        '204':
+          description: No Content (Analysis is not completed yet)
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+        '404':
+          description: Not Found (Bad or Broken token)
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+  '/analyse/batch/{token}/tags':
+    get:
+      tags:
+        - AnalyseBatch
+      summary: Images batch analysis tag results
+      description: |
+        Get all the image annotations which you requested with [/analyse/batch](#AnalyseBatch/analyseBatch) filtering out just the tag objects
+      operationId: analyseBatchTags
+      parameters:
+        - in: path
+          name: token
+          type: string
+          required: true
+          description: Token which will be used to identify the processed request
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Ok
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                imageUrl:
+                  type: string
+                responseStatus:
+                  $ref: '#/definitions/ResponseStatus'
+                tags:
+                  type: array
+                  items:
+                    $ref: '#/definitions/TagNoBound'
+        '204':
+          description: No Content (Analysis is not completed yet)
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+        '404':
+          description: Not Found (Bad or Broken token)
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+  '/analyse/batch/{token}/objects':
+    get:
+      tags:
+        - AnalyseBatch
+      summary: Images batch analysis detected objects
+      description: |
+        Get all the image annotations which you requested with [/analyse/batch](#AnalyseBatch/analyseBatch) filtering out just the objects
+      operationId: analyseBatchObjects
+      parameters:
+        - in: path
+          name: token
+          type: string
+          required: true
+          description: Token which will be used to identify the processed request
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Ok
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                imageUrl:
+                  type: string
+                responseStatus:
+                  $ref: '#/definitions/ResponseStatus'
+                objects:
+                  type: array
+                  items:
+                    $ref: '#/definitions/Tag'
+        '204':
+          description: No Content (Analysis is not completed yet)
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+        '404':
+          description: Not Found (Bad or Broken token)
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+  '/analyse/batch/{token}/description':
+    get:
+      tags:
+        - AnalyseBatch
+      summary: Images batch analysis description results
+      description: |
+        Get all the image annotations which you requested with [/analyse/batch](#AnalyseBatch/analyseBatch) filtering out just the description objects
+      operationId: analyseBatchDescription
+      parameters:
+        - in: path
+          name: token
+          type: string
+          required: true
+          description: Token which will be used to identify the processed request
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Ok
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                imageUrl:
+                  type: string
+                responseStatus:
+                  $ref: '#/definitions/ResponseStatus'
+                description:
+                  $ref: '#/definitions/Description'
+        '204':
+          description: No Content (Analysis is not completed yet)
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+        '404':
+          description: Not Found (Bad or Broken token)
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+  '/analyse/batch/{token}/texts':
+    get:
+      tags:
+        - AnalyseBatch
+      summary: Complete images batch detected texts
+      description: |
+        Get all the image annotations which you requested with [/analyse/batch](#AnalyseBatch/analyseBatch) filtering out just the text objects
+      operationId: analyseBatchTexts
+      parameters:
+        - in: path
+          name: token
+          type: string
+          required: true
+          description: Token which will be used to identify the processed request
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Ok
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                imageUrl:
+                  type: string
+                responseStatus:
+                  $ref: '#/definitions/ResponseStatus'
+                texts:
+                  type: array
+                  items:
+                    $ref: '#/definitions/Text'
+        '204':
+          description: No Content (Analysis is not completed yet)
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+        '404':
+          description: Not Found (Bad or Broken token)
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+  '/analyse/batch/{token}/landmarks':
+    get:
+      tags:
+        - AnalyseBatch
+      summary: Images batch detected landmarks
+      description: |
+        Get all the image annotations which you requested with [/analyse/batch](#AnalyseBatch/analyseBatch) filtering out just the landmarks objects
+      operationId: analyseBatchLandmarks
+      parameters:
+        - in: path
+          name: token
+          type: string
+          required: true
+          description: Token which will be used to identify the processed request
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Ok
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                imageUrl:
+                  type: string
+                responseStatus:
+                  $ref: '#/definitions/ResponseStatus'
+                landmarks:
+                  type: array
+                  items:
+                    $ref: '#/definitions/Landmark'
+        '204':
+          description: No Content (Analysis is not completed yet)
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+        '404':
+          description: Not Found (Bad or Broken token)
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+  '/analyse/batch/{token}/safety':
+    get:
+      tags:
+        - AnalyseBatch
+      summary: Images batch analysis safety annotations
+      description: |
+        Get all the image annotations which you requested with [/analyse/batch](#AnalyseBatch/analyseBatch) filtering out just the safety annotation objects
+      operationId: analyseBatchSafety
+      parameters:
+        - in: path
+          name: token
+          type: string
+          required: true
+          description: Token which will be used to identify the processed request
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Ok
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                imageUrl:
+                  type: string
+                responseStatus:
+                  $ref: '#/definitions/ResponseStatus'
+                safetyAnnotations:
+                  $ref: '#/definitions/SafetyAnnotation'
+        '204':
+          description: No Content (Analysis is not completed yet)
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+        '404':
+          description: Not Found (Bad or Broken token)
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+  '/analyse/batch/{token}/colors':
+    get:
+      tags:
+        - AnalyseBatch
+      summary: Images batch analysis graphical data
+      description: |
+        Get all the image annotations which you requested with [/analyse/batch](#AnalyseBatch/analyseBatch) filtering out just the graphical annotation objects
+      operationId: analyseBatchColor
+      parameters:
+        - in: path
+          name: token
+          type: string
+          required: true
+          description: Token which will be used to identify the processed request
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Ok
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                imageUrl:
+                  type: string
+                responseStatus:
+                  $ref: '#/definitions/ResponseStatus'
+                graphicalData:
+                  $ref: '#/definitions/GraphicalData'
+        '204':
+          description: No Content (Analysis is not completed yet)
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+        '404':
+          description: Not Found (Bad or Broken token)
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+  '/analyse/batch/{token}/web':
+    get:
+      tags:
+        - AnalyseBatch
+      summary: Images batch analysis web detection data
+      description: |
+        Get all the image annotations which you requested with [/analyse/batch](#AnalyseBatch/analyseBatch) filtering out just the graphical annotation objects
+      operationId: analyseBatchWebD
+      parameters:
+        - in: path
+          name: token
+          type: string
+          required: true
+          description: Token which will be used to identify the processed request
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Ok
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                imageUrl:
+                  type: string
+                responseStatus:
+                  $ref: '#/definitions/ResponseStatus'
+                graphicalData:
+                  $ref: '#/definitions/WebDetection'
+        '204':
+          description: No Content (Analysis is not completed yet)
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+        '404':
+          description: Not Found (Bad or Broken token)
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+  /gcloud/analyse:
+    get:
+      tags:
+        - GCloud
+      summary: Complete image analysis
+      description: |
+        This call will provide in a single response all the valuable information extracted from the cognitive services using just Google Cloud Vision and showing them in a unified schema (no need to authenticate yourself because Google Cloud Vision doesn't supply any face recognition service)
+      operationId: gcloudAnalyse
+      parameters:
+        - in: query
+          name: url
+          type: string
+          required: true
+          description: Link of the image which has to be analysed
+        - in: query
+          name: minscore
+          type: number
+          required: false
+          default: 0
+          minimum: 0
+          maximum: 1
+          description: 'Optional score value. You can set the minimum threshold in order to filter out tags and objects with low confidence values. (If you go off the range [0,1] this value will be set to default automatically)'
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GCloudImageAnnotation'
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+  /gcloud/faces:
+    get:
+      tags:
+        - GCloud
+      summary: Face detected in the image
+      description: |
+        This call will provide a full face detection of the image with the data which Google Cloud Vision provides (no need to authenticate yourself because Google Cloud Vision doesn't supply any face recognition service)
+      operationId: gcloudAnalyseFace
+      parameters:
+        - in: query
+          name: url
+          type: string
+          required: true
+          description: Link of the image which has to be analysed
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              faces:
+                type: array
+                items:
+                  $ref: '#/definitions/GCloudFace'
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+  /gcloud/tags:
+    get:
+      tags:
+        - GCloud
+      summary: Image tag analysis
+      description: |
+        This call provides just tag and labels (returned by Google Cloud Vision), respect to what it's possible to obtain with a full and complete [/gcloud/analyse](#/GCloud/gcloudAnalyse) call
+      operationId: gcloudAnalyseTag
+      parameters:
+        - in: query
+          name: url
+          type: string
+          required: true
+          description: Link of the image which has to be analysed
+        - in: query
+          name: minscore
+          type: number
+          required: false
+          default: 0
+          minimum: 0
+          maximum: 1
+          description: 'Optional score value. You can set the minimum threshold in order to filter out tags with low confidence values. (If you go off the range [0,1] this value will be set to default automatically)'
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              tags:
+                type: array
+                items:
+                  $ref: '#/definitions/TagNoBound'
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+  /gcloud/objects:
+    get:
+      tags:
+        - GCloud
+      summary: Image objects detection
+      description: |
+        This call provides just detected objects (provided by Google Cloud Vision), respect to what it's possible to obtain with a full and complete [/gcloud/analyse](#/GCloud/gcloudAnalyse) call
+      operationId: gcloudAnalyseObject
+      parameters:
+        - in: query
+          name: url
+          type: string
+          required: true
+          description: Link of the image which has to be analysed
+        - in: query
+          name: minscore
+          type: number
+          required: false
+          default: 0
+          minimum: 0
+          maximum: 1
+          description: 'Optional score value. You can set the minimum threshold in order to filter out objects with low confidence values. (If you go off the range [0,1] this value will be set to default automatically)'
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              objects:
+                type: array
+                items:
+                  $ref: '#/definitions/Tag'
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+  /gcloud/description:
+    get:
+      tags:
+        - GCloud
+      summary: Description of image content
+      description: |
+        This call provides a brief description of the image content: there will be a bunch of generic tags (supplied by Google Cloud Vision), grouped by concept 
+      operationId: gcloudAnalyseDescription
+      parameters:
+        - in: query
+          name: url
+          type: string
+          required: true
+          description: Link of the image which has to be analysed
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              description:
+                $ref: '#/definitions/GCloudDescription'
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+  /gcloud/texts:
+    get:
+      tags:
+        - GCloud
+      summary: Text detection of supplied image
+      description: |
+        This call will return the different texts which have been detected inside the image by Google Cloud Vision
+      operationId: gcloudAnalyseText
+      parameters:
+        - in: query
+          name: url
+          type: string
+          required: true
+          description: Link of the image which has to be analysed
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              texts:
+                type: array
+                items:
+                  $ref: '#/definitions/Text'
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+  /gcloud/landmarks:
+    get:
+      tags:
+        - GCloud
+      summary: Landmark detection of supplied image
+      description: |
+        This call will return the landmarks (locations of interest) which have been detected inside the image by Google Cloud Vision
+      operationId: gcloudAnalyseLandmark
+      parameters:
+        - in: query
+          name: url
+          type: string
+          required: true
+          description: Link of the image which has to be analysed
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              landmarks:
+                type: array
+                items:
+                  $ref: '#/definitions/Landmark'
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+  /gcloud/safety:
+    get:
+      tags:
+        - GCloud
+      summary: Safety tags annotation of supplied image provided just by google cloud vision
+      description: |
+        This call will return some safey properties (racy likelihood, violence inside the image and so on) with values related to the linked image. This aims to evaluate the likelihood of inappropriate content in the image
+      operationId: gcloudAnalyseSafety
+      parameters:
+        - in: query
+          name: url
+          type: string
+          required: true
+          description: Link of the image which has to be analysed
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              safetyAnnotations:
+                $ref: '#/definitions/GCloudSafetyAnnotation'
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+  /gcloud/colors:
+    get:
+      tags:
+        - GCloud
+      summary: Color analysis of image content
+      description: |
+        This call provides an analysis of the image colors using Google Cloud Vision data
+      operationId: gcloudAnalyseColor
+      parameters:
+        - in: query
+          name: url
+          type: string
+          required: true
+          description: Link of the image which has to be analysed
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              graphicalData:
+                $ref: '#/definitions/GCloudGraphicalData'
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+  /gcloud/web:
+    get:
+      tags:
+        - GCloud
+      summary: Web Detection analysis of image content
+      description: |
+        This call provides an analysis of the image, supplying pages and other images founded in the web (fuly or partially) matching with the one analysed, in addition to a full web entities (related to the ones in Google Graph Network)
+      operationId: gcloudAnalyseWebD
+      parameters:
+        - in: query
+          name: url
+          type: string
+          required: true
+          description: Link of the image which has to be analysed
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              webDetection:
+                $ref: '#/definitions/WebDetection'
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+  /azure/analyse:
+    get:
+      tags:
+        - Azure
+      summary: Complete image analysis
+      description: |
+        This call will combine in a single response all the valuable information extracted from Azure Computer Vision and Azure Face apis showing them in a unified schema (in respect to the standard one)
+      operationId: azureAnalyse
+      parameters:
+        - in: query
+          name: user
+          type: string
+          required: false
+          description: Optional user token which can be used to identify the logged user and to provide additional features (use /auth in order to get one)
+        - in: query
+          name: url
+          type: string
+          required: true
+          description: Link of the image which has to be analysed
+        - in: query
+          name: minscore
+          type: number
+          required: false
+          default: 0
+          minimum: 0
+          maximum: 1
+          description: 'Optional score value. You can set the minimum threshold in order to filter out tags and objects with low confidence values. (If you go off the range [0,1] this value will be set to default automatically)'
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/AzureImageAnnotation'
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+  /azure/faces:
+    get:
+      tags:
+        - Azure
+      summary: Face detected in the image with recognition
+      description: |
+        This call will provide a full face detection of the image with the data which Azure Computer Vision and Azure Face provide
+      operationId: azureAnalyseFace
+      parameters:
+        - in: query
+          name: user
+          type: string
+          required: false
+          description: Optional user token which can be used to identify the logged user and to provide additional features (use /auth in order to get one)
+        - in: query
+          name: url
+          type: string
+          required: true
+          description: Link of the image which has to be analysed
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              faces:
+                type: array
+                items:
+                  $ref: '#/definitions/AzureFace'
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+  /azure/tags:
+    get:
+      tags:
+        - Azure
+      summary: Image tag analysis
+      description: |
+        This call provides just tag and labels (supplied by Azure Computer Vision), respect to what it's possible to obtain with a full and complete [/azure/analyse](#/Azure/azureAnalyse) call
+      operationId: azureAnalyseTag
+      parameters:
+        - in: query
+          name: url
+          type: string
+          required: true
+          description: Link of the image which has to be analysed
+        - in: query
+          name: minscore
+          type: number
+          required: false
+          default: 0
+          minimum: 0
+          maximum: 1
+          description: 'Optional score value. You can set the minimum threshold in order to filter out tags with low confidence values. (If you go off the range [0,1] this value will be set to default automatically)'
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              tags:
+                type: array
+                items:
+                  $ref: '#/definitions/TagNoBound'
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+  /azure/objects:
+    get:
+      tags:
+        - Azure
+      summary: Image objects detection
+      description: |
+        This call provides just detected objects (supplied by Azure Computer Vision), respect to what it's possible to obtain with a full and complete [/azure/analyse](#/Azure/AzureAnalyse) call
+      operationId: azureAnalyseObject
+      parameters:
+        - in: query
+          name: url
+          type: string
+          required: true
+          description: Link of the image which has to be analysed
+        - in: query
+          name: minscore
+          type: number
+          required: false
+          default: 0
+          minimum: 0
+          maximum: 1
+          description: 'Optional score value. You can set the minimum threshold in order to filter out objects with low confidence values. (If you go off the range [0,1] this value will be set to default automatically)'
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              objects:
+                type: array
+                items:
+                  $ref: '#/definitions/Tag'
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+  /azure/description:
+    get:
+      tags:
+        - Azure
+      summary: Description of image content
+      description: |
+        This call provides a brief description of the image content: there will be a bunch of generic tags, grouped by concept, some captions and a classification based on a 86 category taxonomy defined here https://docs.microsoft.com/en-us/azure/cognitive-services/Computer-vision/category-taxonomy
+      operationId: azureAnalyseDescription
+      parameters:
+        - in: query
+          name: url
+          type: string
+          required: true
+          description: Link of the image which has to be analysed
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              eresponseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              description:
+                $ref: '#/definitions/Description'
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+  /azure/landmarks:
+    get:
+      tags:
+        - Azure
+      summary: Landmark detection of supplied image
+      description: |
+        This call will return the landmarks (locations of interest) which have been detected inside the image by Azure Computer Vision
+      operationId: azureAnalyseLandmark
+      parameters:
+        - in: query
+          name: url
+          type: string
+          required: true
+          description: Link of the image which has to be analysed
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              landmarks:
+                type: array
+                items:
+                  $ref: '#/definitions/TagNoBound'
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+  /azure/safety:
+    get:
+      tags:
+        - Azure
+      summary: Safety tags annotation of supplied image
+      description: |
+        This call will return some safey properties (racy likelihood, violence inside the image and so on) with values related to the linked image (data are supplied by Azure Computer Vision). This aims to evaluate the likelihood of inappropriate content in the image
+      operationId: azureAnalyseSafety
+      parameters:
+        - in: query
+          name: url
+          type: string
+          required: true
+          description: Link of the image which has to be analysed
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              safetyAnnotations:
+                $ref: '#/definitions/AzureSafetyAnnotation'
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+  /azure/colors:
+    get:
+      tags:
+        - Azure
+      summary: Color analysis of image content
+      description: |
+        This call provides a complete analysis of the image colors with data supplied by Azure Computer Vision
+      operationId: azureAnalyseColor
+      parameters:
+        - in: query
+          name: url
+          type: string
+          required: true
+          description: Link of the image which has to be analysed
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            type: object
+            properties:
+              imageUrl:
+                type: string
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+              graphicalData:
+                $ref: '#/definitions/AzureGraphicalData'
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+            properties:
+              responseStatus:
+                $ref: '#/definitions/ResponseStatus'
+  '/azure/faces/{user}':
+    post:
+      tags:
+        - AzureFaceMg
+      summary: Add a persisted face to your face group
+      description: |
+        This call provides a way for you to store some user data related to a face, so they will pop out again when a face similar to the one you're storing will be detected (mandatory to perform face training [azure/faces/train/{user}](#/AzureFaceMg/azureTrainFace) in the between, so it's possible to achieve this final result)
+      operationId: azureAddFace
+      consumes:
+        - application/json
+      parameters:
+        - in: path
+          name: user
+          type: string
+          required: true
+          description: User token which can be used to identify the logged user in order to perform operations on the face group related to him
+        - in: formData
+          name: imageUrl
+          type: string
+          required: true
+          description: Url of the image in which the face has been detected
+        - in: formData
+          name: target
+          type: string
+          required: true
+          description: 'left,top,width,height values passed in this very order as a string separated by comma values (example ''232,435,190,195''). You can retrieve this value from precedent analysis and face detection, where the top value it''s just the y of the {tl} or {tr} corner and the left value it''s the x coordinate of the {bl} or {tl} corner (width and height are already given in the faceRectangle)'
+        - in: formData
+          name: userData
+          type: string
+          required: true
+          description: User data you want to associate to this face (e.g. name and surname)
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+        '400':
+          description: Bad Request
+    patch:
+      tags:
+        - AzureFaceMg
+      summary: Update user data related to a persisted face
+      description: |
+        This call provides a way for you to update the stored user data related to a face, so they will pop out again when a face similar to the one you're storing will be detected (mandatory to perform face training [azure/faces/train/{user}](#/AzureFaceMg/azureTrainFace) in the between, so it's possible to achieve this final result)
+      operationId: azurePatchFace
+      consumes:
+        - application/json
+      parameters:
+        - in: path
+          name: user
+          type: string
+          required: true
+          description: User token which can be used to identify the logged user in order to perform operations on the face group related to him
+        - in: formData
+          name: persistedFaceId
+          type: string
+          required: true
+          description: Id of the persisted face (you can have it in the similarFace arrat resulted from previous analysis)
+        - in: formData
+          name: userData
+          type: string
+          required: true
+          description: User data you want to associate to this face (e.g. name and surname)
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+        '400':
+          description: Bad Request
+    delete:
+      tags:
+        - AzureFaceMg
+      summary: Delete persisted face
+      description: |
+        This call provides a way for you to delete the stored user data related to a face, so they won't pop out again when a face similar to the one you're storing will be detected (mandatory to perform face training [azure/faces/train/{user}](#/AzureFaceMg/azureTrainFace) in the between, so it's possible to achieve this final result)
+      operationId: azureDeleteFace
+      consumes:
+        - application/json
+      parameters:
+        - in: path
+          name: user
+          type: string
+          required: true
+          description: User token which can be used to identify the logged user in order to perform operations on the face group related to him
+        - in: formData
+          name: persistedFaceId
+          type: string
+          required: true
+          description: Id of the persisted face (you can have it in the similarFace array resulted from a previous analysis)
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+        '400':
+          description: Bad Request
+  '/azure/faces/train/{user}':
+    post:
+      tags:
+        - AzureFaceMg
+      summary: 'Train your face group (mandatory after adding, patching or deleting face operations)'
+      description: |
+        This call provides a way for you to **START** training your cognitive service, in order to have a good face recognition system. Note carefully: the training can take time if you've stored a lot of faces and until it's done you won't be able to effectively use the face recognition system (**you'll get empty array in similar faces**)
+      operationId: azureTrainFace
+      parameters:
+        - in: path
+          name: user
+          type: string
+          required: true
+          description: User token which can be used to identify the logged user in order to perform operations on the face group related to him
+      produces:
+        - application/json
+      responses:
+        '202':
+          description: Accepted - Training has been started
+        '400':
+          description: Bad Request
+  '/azure/faces/train/{user}/status':
+    get:
+      tags:
+        - AzureFaceMg
+      summary: See the training status of your facegroup
+      description: |
+        This call provides a way for you to **CHECK** the training status of the face recognition model related to your user: sometimes it could take even a few minutes to get the training operation completed and until that you won't see any actual results (related to face recognition) on similarFaces. If you need it, you better perform a quick check to this endpoint before
+      operationId: azureTrainFaceStatus
+      parameters:
+        - in: path
+          name: user
+          type: string
+          required: true
+          description: User token which can be used to identify the logged user in order to perform operations on the face group related to him
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Training status available and fetched for the selected user
+          schema:
+            $ref: '#/definitions/TrainingStatus'
+        '400':
+          description: Bad Request
+definitions:
+  Point2d:
+    type: object
+    properties:
+      x:
+        description: X coordinate in px
+        type: integer
+      'y':
+        description: Y coordinate in px
+        type: integer
+  Point3d:
+    type: object
+    properties:
+      x:
+        description: X coordinate in px
+        type: integer
+      'y':
+        description: Y coordinate in px
+        type: integer
+      z:
+        description: Z coordinate in px (depth in an image)
+        type: integer
+  BoundingBox:
+    type: object
+    properties:
+      width:
+        description: Width dimension in px of the rectangle box
+        type: integer
+      height:
+        description: Height dimension in px of the rectangle box
+        type: integer
+      bl:
+        $ref: '#/definitions/Point2d'
+      br:
+        $ref: '#/definitions/Point2d'
+      tl:
+        $ref: '#/definitions/Point2d'
+      tr:
+        $ref: '#/definitions/Point2d'
+  Noise:
+    type: object
+    properties:
+      noiseLevel:
+        description: Noise level of face pixels
+        type: string
+        enum:
+          - Low
+          - Medium
+          - High
+      value:
+        description: Level of noise of face pixels expressed as a value between 0 and 1
+        type: number
+        minimum: 0
+        maximum: 1
+  Occlusion:
+    type: object
+    properties:
+      eyeMakeup:
+        description: True if the eye(s) is(are) detected with makeup on it(them)
+        type: boolean
+      lipMakeup:
+        description: True if the lip(s) has(have) makeup on it(them)
+        type: boolean
+  Makeup:
+    type: object
+    properties:
+      foreheadOccluded:
+        description: True if the forehead is occluded
+        type: boolean
+      eyeOccluded:
+        description: True if the eye(s) is(are) occluded
+        type: boolean
+      mouthOccluded:
+        description: True if the mouth is occluded
+        type: boolean
+  Accessory:
+    type: object
+    properties:
+      type:
+        description: Denomination of the type of identified accessory
+        type: string
+        example: headwear
+      confidence:
+        description: Probability value between 0 and 1 in order to express the confidence of the presence of the identified object
+        type: number
+        minimum: 0
+        maximum: 1
+  HeadPose:
+    type: object
+    properties:
+      rollAngle:
+        description: 'Roll angle, which indicates the amount of clockwise/anti-clockwise rotation of the face relative to the image vertical about the axis perpendicular to the face. Range [-180,180]'
+        type: number
+        minimum: -180
+        maximum: 180
+      panAngle:
+        description: 'Yaw angle, which indicates the leftward/rightward angle that the face is pointing relative to the vertical plane perpendicular to the image. Range [-180,180].'
+        type: number
+        minimum: -180
+        maximum: 180
+      tiltAngle:
+        description: 'Pitch angle, which indicates the upwards/downwards angle that the face is pointing relative to the image''s horizontal plane. Range [-180,180].'
+        type: number
+        minimum: -180
+        maximum: 180
+  Hair:
+    type: object
+    properties:
+      invisible:
+        description: Indicate if the hair are visible or not
+        type: boolean
+      bald:
+        description: Indicate level of baldness as a value between 0 and 1
+        type: number
+        minimum: 0
+        maximum: 1
+      hairColors:
+        description: Possible colors of the detected hair for the face
+        type: array
+        items:
+          $ref: '#/definitions/HairColor'
+  HairColor:
+    type: object
+    properties:
+      color:
+        description: Possible color for the hair
+        type: string
+        example: Brown
+      confidence:
+        description: Confidence value for this hair color expressed as a value between 0 and 1
+        type: number
+        minimum: 0
+        maximum: 1
+  FacialHair:
+    type: object
+    properties:
+      moustache:
+        description: Indicate if it's been detected a moustache in the face
+        type: boolean
+      beard:
+        description: Indicate if it's been detected a beard in the face
+        type: boolean
+      sideburns:
+        description: Indicate if it's been detected a sideburns in the face
+        type: boolean
+  PersistedFace:
+    type: object
+    properties:
+      persistedFaceId:
+        description: Persisted Face Id on Azure in the Face List Group related to the logged user
+        type: string
+      userData:
+        description: User Data linked to the persisted Face Id on Azure in the Face List Group related to the logged user (and provided by him/her in the first place)
+        type: string
+      confidence:
+        description: Level of similarity of this persisted face in respect to the one which has been just detected
+        type: number
+        minimum: 0
+        maximum: 1
+  FaceLandmarksAnnotation:
+    type: object
+    properties:
+      type:
+        type: string
+        enum:
+          - UNKNOWN_LANDMARK
+          - LEFT_EYE
+          - RIGHT_EYE
+          - LEFT_OF_LEFT_EYEBROW
+          - RIGHT_OF_LEFT_EYEBROW
+          - LEFT_OF_RIGHT_EYEBROW
+          - RIGHT_OF_RIGHT_EYEBROW
+          - MIDPOINT_BETWEEN_EYES
+          - NOSE_TIP
+          - UPPER_LIP
+          - LOWER_LIP
+          - MOUTH_LEFT
+          - MOUTH_RIGHT
+          - MOUTH_CENTER
+          - NOSE_BOTTOM_RIGHT
+          - NOSE_BOTTOM_LEFT
+          - NOSE_BOTTOM_CENTER
+          - LEFT_EYE_TOP_BOUNDARY
+          - LEFT_EYE_RIGHT_CORNER
+          - LEFT_EYE_BOTTOM_BOUNDARY
+          - LEFT_EYE_LEFT_CORNER
+          - RIGHT_EYE_TOP_BOUNDARY
+          - RIGHT_EYE_RIGHT_CORNER
+          - RIGHT_EYE_BOTTOM_BOUNDARY
+          - RIGHT_EYE_LEFT_CORNER
+          - LEFT_EYEBROW_UPPER_MIDPOINT
+          - RIGHT_EYEBROW_UPPER_MIDPOINT
+          - LEFT_EAR_TRAGION
+          - RIGHT_EAR_TRAGION
+          - LEFT_EYE_PUPIL
+          - RIGHT_EYE_PUPIL
+          - FOREHEAD_GLABELLA
+          - CHIN_GNATHION
+          - CHIN_LEFT_GONION
+          - CHIN_RIGHT_GONION
+      position:
+        $ref: '#/definitions/Point3d'
+  TagNoBound:
+    type: object
+    properties:
+      name:
+        description: 'Concept, object, logo, celebrity name'
+        type: string
+      mid:
+        description: Opaque entity ID. Some IDs may be available in Google Knowledge Graph Search API.
+        type: string
+      confidence:
+        description: 'Level of confidence for the detected concept, logo, object, celebrity'
+        type: number
+        minimum: 0
+        maximum: 1
+  Tag:
+    type: object
+    properties:
+      name:
+        description: 'Concept, object, logo, celebrity name'
+        type: string
+      mid:
+        description: Opaque entity ID. Some IDs may be available in Google Knowledge Graph Search API.
+        type: string
+      confidence:
+        description: 'Level of confidence for the detected concept, logo, object, celebrity'
+        type: number
+        minimum: 0
+        maximum: 1
+      boundingBox:
+        $ref: '#/definitions/BoundingBox'
+  Text:
+    type: object
+    properties:
+      content:
+        description: Content for the detected text
+        type: string
+      confidence:
+        description: Level of confidence in relation to the presence of the detected text
+        type: number
+        minimum: 0
+        maximum: 1
+      locale:
+        description: The language code for the locale in which the entity textual description is expressed
+        type: string
+      boundingBox:
+        $ref: '#/definitions/BoundingBox'
+  Landmark:
+    type: object
+    properties:
+      name:
+        description: Name of the detected landmark
+        type: string
+      mid:
+        description: Opaque entity ID. Some IDs may be available in Google Knowledge Graph Search API.
+        type: string
+      confidence:
+        description: Level of confidence in relation to the presence of the detected landmark
+        type: number
+        minimum: 0
+        maximum: 1
+      latitude:
+        description: Latitude coordinate for the detected landmark
+        type: number
+        minimum: -90
+        maximum: 90
+      longitude:
+        description: Longitude coordinate for the detected landmark
+        type: number
+        minimum: -180
+        maximum: 180
+      boundingBox:
+        $ref: '#/definitions/BoundingBox'
+  Description:
+    type: object
+    properties:
+      generic_tags:
+        description: Array of generic tags related to the uploaded image (grouped in lists by common concepts)
+        type: array
+        items:
+          type: string
+      captions:
+        description: Brief sentences which aims to synthesize the content of the image
+        type: array
+        items:
+          $ref: '#/definitions/TagNoBound'
+      categories:
+        description: 'Most of the time just a single word which aims to synthesize the content of the image. All the values are limited to an 86 taxonomy defined by Azure Computer Vision at https://docs.microsoft.com/en-us/azure/cognitive-services/Computer-vision/category-taxonomy'
+        type: array
+        items:
+          $ref: '#/definitions/TagNoBound'
+  GCloudDescription:
+    type: object
+    properties:
+      generic_tags:
+        description: Array of generic tags related to the uploaded image (grouped in lists by common concepts)
+        type: array
+        items:
+          type: string
+  RGBA:
+    type: object
+    properties:
+      r:
+        description: Red value for rgba
+        type: integer
+        minimum: 0
+        maximum: 255
+      g:
+        description: Green value for rgba
+        type: integer
+        minimum: 0
+        maximum: 255
+      b:
+        description: Blue value for rgba
+        type: integer
+        minimum: 0
+        maximum: 255
+      a:
+        description: Alpha value
+        type: number
+        minimum: 0
+        maximum: 1
+  ColorInfoRGBA:
+    type: array
+    items:
+      type: object
+      properties:
+        pixelFraction:
+          description: 'The fraction of pixels the color occupies in the image. Value in range [0, 1]'
+          type: number
+          minimum: 0
+          maximum: 1
+        confidence:
+          description: 'Image-specific score for this color. Value in range [0, 1].'
+          type: number
+          minimum: 0
+          maximum: 1
+        color:
+          $ref: '#/definitions/RGBA'
+  GraphicalData:
+    type: object
+    properties:
+      dominantColorForeground:
+        description: The dominant color in the foreground
+        type: string
+      dominantColorBackground:
+        description: The dominant color in the background
+        type: string
+      dominantColors:
+        description: The dominant colors for the image
+        type: array
+        items:
+          type: string
+      accentColor:
+        description: Accent color detected for the current image
+        type: string
+      isBWImg:
+        description: True if the image is in black and white
+        type: boolean
+      clipArtType:
+        description: Integer value between 0 and 3 in order to define how much this image is similar to a clipart
+        type: integer
+        minimum: 0
+        maximum: 3
+      lineDrawingType:
+        description: True if the image content is detected as drawn by a human
+        type: boolean
+      colorInfoRGBA:
+        $ref: '#/definitions/ColorInfoRGBA'
+  AzureGraphicalData:
+    type: object
+    properties:
+      dominantColorForeground:
+        description: The dominant color in the foreground
+        type: string
+      dominantColorBackground:
+        description: The dominant color in the background
+        type: string
+      dominantColors:
+        description: The dominant colors for the image
+        type: array
+        items:
+          type: string
+      accentColor:
+        description: Accent color detected for the current image
+        type: string
+      isBWImg:
+        description: True if the image is in black and white
+        type: boolean
+      clipArtType:
+        description: Integer value between 0 and 3 in order to define how much this image is similar to a clipart
+        type: integer
+        minimum: 0
+        maximum: 3
+      lineDrawingType:
+        description: True if the image content is detected as drawn by a human
+        type: boolean
+  GCloudGraphicalData:
+    type: object
+    properties:
+      colorInfoRGBA:
+        $ref: '#/definitions/ColorInfoRGBA'
+  ConfidenceLabel:
+    type: string
+    description: Confidence value expressed as the likelihood label
+    enum:
+      - UNKNOWN
+      - VERY_UNLIKELY
+      - 'UNLIKELY, POSSIBLE'
+      - LIKELY
+      - VERY_LIKELY
+  SafetyAnnotation:
+    type: object
+    properties:
+      racy:
+        $ref: '#/definitions/ConfidenceLabel'
+      adult:
+        $ref: '#/definitions/ConfidenceLabel'
+      violence:
+        $ref: '#/definitions/ConfidenceLabel'
+      medical:
+        $ref: '#/definitions/ConfidenceLabel'
+      spoof:
+        $ref: '#/definitions/ConfidenceLabel'
+  AzureSafetyAnnotation:
+    type: object
+    properties:
+      racy:
+        $ref: '#/definitions/ConfidenceLabel'
+      adult:
+        $ref: '#/definitions/ConfidenceLabel'
+  GCloudSafetyAnnotation:
+    type: object
+    properties:
+      racy:
+        $ref: '#/definitions/ConfidenceLabel'
+      adult:
+        $ref: '#/definitions/ConfidenceLabel'
+      violence:
+        $ref: '#/definitions/ConfidenceLabel'
+      medical:
+        $ref: '#/definitions/ConfidenceLabel'
+      spoof:
+        $ref: '#/definitions/ConfidenceLabel'
+  Metadata:
+    type: object
+    properties:
+      width:
+        description: Pixel width for the analyzed picture
+        type: integer
+      height:
+        description: Pixel height for the analyzed picture
+        type: integer
+      format:
+        description: Format of the analyzed picture
+        type: string
+  Face:
+    type: object
+    properties:
+      faceId:
+        description: faceId randomly generated by Azure Face (will expire in 24 hours)
+        type: string
+      gender:
+        description: Recognized gender
+        type: string
+        enum:
+          - male
+          - female
+      age:
+        description: Recognized age value
+        type: integer
+      smile:
+        description: 'Smile intensity, a number between [0,1]'
+        type: number
+        minimum: 0
+        maximum: 1
+      glasses:
+        description: Glasses type
+        type: string
+        enum:
+          - NoGlasses
+          - ReadingGlasses
+          - Sunglasses
+          - SwimmingGoggles
+      faceRectangle:
+        $ref: '#/definitions/BoundingBox'
+      landmarks:
+        type: array
+        items:
+          $ref: '#/definitions/FaceLandmarksAnnotation'
+      similarFaces:
+        type: object
+        properties:
+          trainingStatus:
+            type: string
+          similarBatchFaceIds:
+            description: azure faceIds of the most similar faces detected in the same batch of photos (available just in batch analysis)
+            type: array
+            items:
+              type: string
+          similarPersistedFaces:
+            type: array
+            items:
+              $ref: '#/definitions/PersistedFace'
+      celebrity:
+        $ref: '#/definitions/TagNoBound'
+      facialHair:
+        $ref: '#/definitions/FacialHair'
+      hair:
+        $ref: '#/definitions/Hair'
+      headPose:
+        $ref: '#/definitions/HeadPose'
+      emotions:
+        type: object
+        properties:
+          anger:
+            $ref: '#/definitions/ConfidenceLabel'
+          contempt:
+            $ref: '#/definitions/ConfidenceLabel'
+          disgust:
+            $ref: '#/definitions/ConfidenceLabel'
+          fear:
+            $ref: '#/definitions/ConfidenceLabel'
+          happiness:
+            $ref: '#/definitions/ConfidenceLabel'
+          neutral:
+            $ref: '#/definitions/ConfidenceLabel'
+          sadness:
+            $ref: '#/definitions/ConfidenceLabel'
+          surprise:
+            $ref: '#/definitions/ConfidenceLabel'
+      makeup:
+        $ref: '#/definitions/Makeup'
+      occlusion:
+        $ref: '#/definitions/Occlusion'
+      accessories:
+        type: array
+        items:
+          $ref: '#/definitions/Accessory'
+      noise:
+        $ref: '#/definitions/Noise'
+      underExposedLikelihood:
+        $ref: '#/definitions/ConfidenceLabel'
+      blurredLikelihood:
+        $ref: '#/definitions/ConfidenceLabel'
+  AzureFace:
+    type: object
+    properties:
+      faceId:
+        description: faceId randomly generated by Azure Face (will expire in 24 hours)
+        type: string
+      gender:
+        description: Recognized gender
+        type: string
+        enum:
+          - male
+          - female
+      age:
+        description: Recognized age value
+        type: integer
+      smile:
+        description: 'Smile intensity, a number between [0,1]'
+        type: number
+        minimum: 0
+        maximum: 1
+      glasses:
+        description: Glasses type
+        type: string
+        enum:
+          - NoGlasses
+          - ReadingGlasses
+          - Sunglasses
+          - SwimmingGoggles
+      faceRectangle:
+        $ref: '#/definitions/BoundingBox'
+      landmarks:
+        type: array
+        items:
+          $ref: '#/definitions/FaceLandmarksAnnotation'
+      similarFaces:
+        type: object
+        properties:
+          trainingStatus:
+            type: string
+          similarPersistedFaces:
+            type: array
+            items:
+              $ref: '#/definitions/PersistedFace'
+      celebrity:
+        $ref: '#/definitions/TagNoBound'
+      facialHair:
+        $ref: '#/definitions/FacialHair'
+      hair:
+        $ref: '#/definitions/Hair'
+      headPose:
+        $ref: '#/definitions/HeadPose'
+      emotions:
+        type: object
+        properties:
+          anger:
+            $ref: '#/definitions/ConfidenceLabel'
+          contempt:
+            $ref: '#/definitions/ConfidenceLabel'
+          disgust:
+            $ref: '#/definitions/ConfidenceLabel'
+          fear:
+            $ref: '#/definitions/ConfidenceLabel'
+          happiness:
+            $ref: '#/definitions/ConfidenceLabel'
+          neutral:
+            $ref: '#/definitions/ConfidenceLabel'
+          sadness:
+            $ref: '#/definitions/ConfidenceLabel'
+          surprise:
+            $ref: '#/definitions/ConfidenceLabel'
+      makeup:
+        $ref: '#/definitions/Makeup'
+      occlusion:
+        $ref: '#/definitions/Occlusion'
+      accessories:
+        type: array
+        items:
+          $ref: '#/definitions/Accessory'
+      noise:
+        $ref: '#/definitions/Noise'
+      underExposedLikelihood:
+        $ref: '#/definitions/ConfidenceLabel'
+      blurredLikelihood:
+        $ref: '#/definitions/ConfidenceLabel'
+  GCloudFace:
+    type: object
+    properties:
+      faceRectangle:
+        $ref: '#/definitions/BoundingBox'
+      landmarks:
+        type: array
+        items:
+          $ref: '#/definitions/FaceLandmarksAnnotation'
+      headPose:
+        $ref: '#/definitions/HeadPose'
+      emotions:
+        type: object
+        properties:
+          anger:
+            $ref: '#/definitions/ConfidenceLabel'
+          happiness:
+            $ref: '#/definitions/ConfidenceLabel'
+          sadness:
+            $ref: '#/definitions/ConfidenceLabel'
+          surprise:
+            $ref: '#/definitions/ConfidenceLabel'
+      underExposedLikelihood:
+        $ref: '#/definitions/ConfidenceLabel'
+      blurredLikelihood:
+        $ref: '#/definitions/ConfidenceLabel'
+  WebEntity:
+    type: object
+    description: Entity deduced from similar images on the Internet.
+    properties:
+      entityId:
+        description: Opaque entity ID.
+        type: string
+      score:
+        description: Overall relevancy score for the entity. Not normalized and not comparable across different image queries.
+        type: number
+        minimum: 0
+        maximum: 1
+      description:
+        description: 'Canonical description of the entity, in English.'
+        type: string
+  WebLabel:
+    type: object
+    description: Label to provide extra metadata for the web detection.
+    properties:
+      label:
+        description: Label for extra metadata.
+        type: string
+      languageCode:
+        description: 'The BCP-47 language code for label, such as "en-US" or "sr-Latn". For more information, see http://www.unicode.org/reports/tr35/#Unicode_locale_identifier.'
+        type: string
+  WebImage:
+    type: object
+    description: Metadata for online images.
+    properties:
+      url:
+        description: The result image URL.
+        type: string
+      score:
+        description: (Deprecated) Overall relevancy score for the image.
+        type: number
+        minimum: 0
+        maximum: 1
+  WebPage:
+    type: object
+    description: Metadata for web pages.
+    properties:
+      url:
+        description: The result web page URL.
+        type: string
+      score:
+        description: (Deprecated) Overall relevancy score for the web page.
+        type: number
+        minimum: 0
+        maximum: 1
+      pageTitle:
+        description: 'Title for the web page, may contain HTML markups.'
+        type: string
+      fullMatchingImages:
+        description: Fully matching images on the page. Can include resized copies of the query image.
+        type: array
+        items:
+          $ref: '#/definitions/WebImage'
+      partialMatchingImages:
+        description: Partial matching images on the page. Those images are similar enough to share some key-point features. For example an original image will likely have partial matching for its crops.
+        type: array
+        items:
+          $ref: '#/definitions/WebImage'
+  WebDetection:
+    type: object
+    description: Relevant information for the image from the Internet.
+    properties:
+      webEntities:
+        type: array
+        items:
+          $ref: '#/definitions/WebEntity'
+      fullMatchingImages:
+        type: array
+        items:
+          $ref: '#/definitions/WebImage'
+      partialMatchingImages:
+        type: array
+        items:
+          $ref: '#/definitions/WebImage'
+      pagesWithMatchingImages:
+        type: array
+        items:
+          $ref: '#/definitions/WebPage'
+      visualSimilarImages:
+        type: array
+        items:
+          $ref: '#/definitions/WebImage'
+      bestGuessLabels:
+        type: array
+        items:
+          $ref: '#/definitions/WebLabel'
+  ResponseStatus:
+    type: object
+    description: 'Response status code, with a better explanation of what could be the possible causes of the error'
+    properties:
+      status:
+        type: number
+        default: 200
+      code:
+        type: string
+        default: OK
+      msg:
+        type: string
+        description: Additional string attached to the status in order to understand better the nature of the error
+  ImageAnnotation:
+    type: object
+    properties:
+      imageUrl:
+        type: string
+      metadata:
+        $ref: '#/definitions/Metadata'
+      texts:
+        type: array
+        items:
+          $ref: '#/definitions/Text'
+      landmarks:
+        type: array
+        items:
+          $ref: '#/definitions/Landmark'
+      objects:
+        type: array
+        items:
+          $ref: '#/definitions/Tag'
+      tags:
+        type: array
+        items:
+          $ref: '#/definitions/TagNoBound'
+      description:
+        $ref: '#/definitions/Description'
+      graphicalData:
+        $ref: '#/definitions/GraphicalData'
+      faces:
+        type: array
+        items:
+          $ref: '#/definitions/Face'
+      safetyAnnotations:
+        $ref: '#/definitions/SafetyAnnotation'
+      webDetection:
+        $ref: '#/definitions/WebDetection'
+      responseStatus:
+        $ref: '#/definitions/ResponseStatus'
+  AzureImageAnnotation:
+    type: object
+    properties:
+      imageUrl:
+        type: string
+      metadata:
+        $ref: '#/definitions/Metadata'
+      landmarks:
+        type: array
+        items:
+          $ref: '#/definitions/TagNoBound'
+      objects:
+        type: array
+        items:
+          $ref: '#/definitions/Tag'
+      tags:
+        type: array
+        items:
+          $ref: '#/definitions/TagNoBound'
+      description:
+        $ref: '#/definitions/Description'
+      graphicalData:
+        $ref: '#/definitions/AzureGraphicalData'
+      faces:
+        type: array
+        items:
+          $ref: '#/definitions/AzureFace'
+      safetyAnnotations:
+        $ref: '#/definitions/AzureSafetyAnnotation'
+      responseStatus:
+        $ref: '#/definitions/ResponseStatus'
+  GCloudImageAnnotation:
+    type: object
+    properties:
+      imageUrl:
+        type: string
+      metadata:
+        $ref: '#/definitions/Metadata'
+      texts:
+        type: array
+        items:
+          $ref: '#/definitions/Text'
+      landmarks:
+        type: array
+        items:
+          $ref: '#/definitions/Landmark'
+      objects:
+        type: array
+        items:
+          $ref: '#/definitions/Tag'
+      tags:
+        type: array
+        items:
+          $ref: '#/definitions/TagNoBound'
+      description:
+        $ref: '#/definitions/GCloudDescription'
+      graphicalData:
+        $ref: '#/definitions/GCloudGraphicalData'
+      faces:
+        type: array
+        items:
+          $ref: '#/definitions/GCloudFace'
+      safetyAnnotations:
+        $ref: '#/definitions/GCloudSafetyAnnotation'
+      webDetection:
+        $ref: '#/definitions/WebDetection'
+      responseStatus:
+        $ref: '#/definitions/ResponseStatus'
+  TrainingStatus:
+    description: Training status available and fetched for the selected user
+    type: object
+    properties:
+      trainingStatus:
+        type: string
+        enum:
+          - succeeded
+          - running
+          - RateLimitExceeded
+          - LargeFaceListNotFound
+          - LargeFaceListNotTrained
+      createdDateTime:
+        type: string
+      lastActionDateTime:
+        type: string
+      message:
+        type: string
+      lastSuccessfulTrainingDateTime:
+        type: string
